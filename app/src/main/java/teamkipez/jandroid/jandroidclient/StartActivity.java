@@ -1,17 +1,51 @@
 package teamkipez.jandroid.jandroidclient;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.Toast;
 
 public class StartActivity extends AppCompatActivity {
+
+    Button play;
+    ImageView connectionStatusImg;
+    Boolean connectionStatus = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
+
+        connect();
+        updateConnectionStatus();
+
+        play = (Button) findViewById(R.id.button_play);
+        play.setOnClickListener(playListener);
+
     }
+
+    private View.OnClickListener playListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+
+            if(connectionStatus) {
+
+                Intent newActivity = new Intent();
+                newActivity.setClass(getApplicationContext(), ControlActivity.class);
+                startActivity(newActivity);
+
+            }else{
+
+                Toast.makeText(getApplicationContext(), R.string.connection_not, Toast.LENGTH_SHORT).show();
+            }
+        }
+    };
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -33,5 +67,25 @@ public class StartActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void updateConnectionStatus(){
+
+        connectionStatusImg = (ImageView) findViewById(R.id.image_status);
+        if(connectionStatus){
+            connectionStatusImg.setBackgroundResource(R.drawable.actif);
+            Toast.makeText(getApplicationContext(), R.string.connection_success, Toast.LENGTH_LONG).show();
+        }else{
+            connectionStatusImg.setBackgroundResource(R.drawable.non_actif);
+            Toast.makeText(getApplicationContext(), R.string.connection_failed, Toast.LENGTH_LONG).show();
+        }
+
+    }
+
+    private void connect(){
+
+        // Set connection to JANDROID
+        connectionStatus = true;
+
     }
 }
