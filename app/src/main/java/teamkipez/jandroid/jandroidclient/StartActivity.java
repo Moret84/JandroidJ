@@ -13,9 +13,8 @@ import android.widget.Toast;
 
 public class StartActivity extends AppCompatActivity {
 
-    Button play;
+    Button play, connect;
     ImageView connectionStatusImg;
-    Boolean connectionStatus = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +26,10 @@ public class StartActivity extends AppCompatActivity {
 
         play = (Button) findViewById(R.id.button_play);
         play.setOnClickListener(playListener);
+
+        connect = (Button) findViewById(R.id.connect_button);
+        connect.setOnClickListener(connectListener);
+
 
     }
 
@@ -52,7 +55,10 @@ public class StartActivity extends AppCompatActivity {
         public void onClick(View v) {
 
             if(!Connections.getInstance().joystickIsConnected())
+			{
 				Connections.getInstance().attemptJoystickConnection();
+				updateConnectionStatus();
+			}
 
             else
                 Toast.makeText(getApplicationContext(), R.string.already_connected, Toast.LENGTH_SHORT).show();

@@ -42,11 +42,14 @@ public class ControlActivity extends Activity {
         directionTextView = (TextView) findViewById(R.id.directionTextView);
         joystick = (JoystickView) findViewById(R.id.joystick);
 
+		Connections.getInstance().prepareInputSending();
         joystick.setOnJoystickMoveListener(new JoystickView.OnJoystickMoveListener() {
             @Override
             public void onValueChanged(int angle, int power, int direction) {
                 angleTextView.setText(" " + String.valueOf(angle) + "°");
                 powerTextView.setText(" " + String.valueOf(power) + "%");
+
+				Connections.getInstance().sendJoystickInput(angle, power);
 
                 switch (direction) {
                     case JoystickView.FRONT:
