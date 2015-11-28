@@ -7,6 +7,8 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="connection_not">Not connected !</string>
+    <string name="already_connected">Already connected!</string>
     <string name="connection_success">Successfully connected to Jan DROID</string>
     <string name="connection_failed">An error occured during the connection to Jan DROID ...</string>
+    <string name="connect">Connect</string>
 </resources>

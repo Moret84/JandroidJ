@@ -35,7 +35,7 @@ public class ControlActivity extends Activity {
         progressDialog = ProgressDialog.show(ControlActivity.this, "", "Buffering video...", true);
         progressDialog.setCancelable(true);
 
-        PlayVideo();
+        //PlayVideo();
 
         angleTextView = (TextView) findViewById(R.id.angleTextView);
         powerTextView = (TextView) findViewById(R.id.powerTextView);
@@ -47,6 +47,7 @@ public class ControlActivity extends Activity {
             public void onValueChanged(int angle, int power, int direction) {
                 angleTextView.setText(" " + String.valueOf(angle) + "°");
                 powerTextView.setText(" " + String.valueOf(power) + "%");
+
                 switch (direction) {
                     case JoystickView.FRONT:
                         directionTextView.setText("front");
@@ -142,6 +143,5 @@ public class ControlActivity extends Activity {
             System.out.println("Video Play Error :"+e.toString());
             finish();
         }
-
     }
 }

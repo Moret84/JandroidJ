@@ -22,7 +22,7 @@ public class StartActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
 
-        connect();
+		Connections.getInstance().attemptJoystickConnection();
         updateConnectionStatus();
 
         play = (Button) findViewById(R.id.button_play);
@@ -34,7 +34,7 @@ public class StartActivity extends AppCompatActivity {
         @Override
         public void onClick(View v) {
 
-            if(connectionStatus) {
+            if(Connections.getInstance().joystickIsConnected()) {
 
                 Intent newActivity = new Intent();
                 newActivity.setClass(getApplicationContext(), ControlActivity.class);
@@ -44,6 +44,18 @@ public class StartActivity extends AppCompatActivity {
 
                 Toast.makeText(getApplicationContext(), R.string.connection_not, Toast.LENGTH_SHORT).show();
             }
+        }
+    };
+
+    private View.OnClickListener connectListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+
+            if(!Connections.getInstance().joystickIsConnected())
+				Connections.getInstance().attemptJoystickConnection();
+
+            else
+                Toast.makeText(getApplicationContext(), R.string.already_connected, Toast.LENGTH_SHORT).show();
         }
     };
 
@@ -72,20 +84,13 @@ public class StartActivity extends AppCompatActivity {
     private void updateConnectionStatus(){
 
         connectionStatusImg = (ImageView) findViewById(R.id.image_status);
-        if(connectionStatus){
+        if(Connections.getInstance().joystickIsConnected()){
             connectionStatusImg.setBackgroundResource(R.drawable.actif);
             Toast.makeText(getApplicationContext(), R.string.connection_success, Toast.LENGTH_LONG).show();
         }else{
             connectionStatusImg.setBackgroundResource(R.drawable.non_actif);
             Toast.makeText(getApplicationContext(), R.string.connection_failed, Toast.LENGTH_LONG).show();
         }
-
-    }
-
-    private void connect(){
-
-        // Set connection to JANDROID
-        connectionStatus = true;
 
     }
 }
