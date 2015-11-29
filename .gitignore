@@ -1,0 +1,8 @@
+build/*
+build.gradle
+build.gradle.bak
+gradlew.bat
+.gradle
+gradlew
+.*.swp
+gradle

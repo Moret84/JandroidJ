@@ -75,10 +75,14 @@ public class ControlActivity extends Activity implements SensorEventListener{
             }
         });
 
+        //PlayVideo();
+
+
         //Debugs Joystick
         angleTextView = (TextView) findViewById(R.id.angleTextView);
         powerTextView = (TextView) findViewById(R.id.powerTextView);
         directionTextView = (TextView) findViewById(R.id.directionTextView);
+
 
         //Joysticks
         joystickRight = (JoystickView) findViewById(R.id.joystickRight);
@@ -97,18 +101,18 @@ public class ControlActivity extends Activity implements SensorEventListener{
             @Override
             public void onClick(View v) {
 
-                if(sensor){
+                if (sensor) {
                     onPause();
                     sensor = false;
                     Toast.makeText(getApplicationContext(), R.string.resume, Toast.LENGTH_SHORT).show();
-                }else{
+                } else {
                     onResume();
                     sensor = true;
                     Toast.makeText(getApplicationContext(), R.string.pause, Toast.LENGTH_SHORT).show();
                 }
-
             }
         });
+		Connections.getInstance().prepareInputSending();
         //Check Accelerometers
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
@@ -187,7 +191,6 @@ public class ControlActivity extends Activity implements SensorEventListener{
             System.out.println("Video Play Error :"+e.toString());
             finish();
         }
-
     }
 
     private void setJoystickListener(JoystickView joystick, String dir){
