@@ -26,10 +26,7 @@ public class StartActivity extends AppCompatActivity {
 
         play = (Button) findViewById(R.id.button_play);
         play.setOnClickListener(playListener);
-
-        connect = (Button) findViewById(R.id.connect_button);
-        connect.setOnClickListener(connectListener);
-
+        
 
     }
 
@@ -50,20 +47,6 @@ public class StartActivity extends AppCompatActivity {
         }
     };
 
-    private View.OnClickListener connectListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-
-            if(!Connections.getInstance().joystickIsConnected())
-			{
-				Connections.getInstance().attemptJoystickConnection();
-				updateConnectionStatus();
-			}
-
-            else
-                Toast.makeText(getApplicationContext(), R.string.already_connected, Toast.LENGTH_SHORT).show();
-        }
-    };
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -81,6 +64,15 @@ public class StartActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+
+            if(!Connections.getInstance().joystickIsConnected())
+            {
+                Connections.getInstance().attemptJoystickConnection();
+                updateConnectionStatus();
+            }
+
+            else
+                Toast.makeText(getApplicationContext(), R.string.already_connected, Toast.LENGTH_SHORT).show();
             return true;
         }
 

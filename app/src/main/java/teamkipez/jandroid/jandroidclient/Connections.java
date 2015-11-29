@@ -22,14 +22,14 @@ public class Connections
 
 	private void joystickConnect()
 	{
-		try
+		/*try
 		{
 			mJoystickSocket = new Socket(IP, PORT);
 		}
 		catch(IOException e)
 		{
 			e.printStackTrace();
-		}
+		}*/
 	}
 
 	public static Connections getInstance()
