@@ -35,6 +35,8 @@ public class ControlActivity extends Activity implements SensorEventListener{
     VideoView videoView;
     String url = "https://archive.org/download/ksnn_compilation_master_the_internet/ksnn_compilation_master_the_internet_512kb.mp4";
 
+	public enum Joystick{LEFT, RIGHT};
+
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private JoystickView joystickLeft;
@@ -87,8 +89,8 @@ public class ControlActivity extends Activity implements SensorEventListener{
         //Joysticks
         joystickRight = (JoystickView) findViewById(R.id.joystickRight);
         joystickLeft = (JoystickView) findViewById(R.id.joystick);
-        setJoystickListener(joystickLeft, "left");
-        setJoystickListener(joystickRight, "right");
+        setJoystickListener(joystickLeft, Joystick.LEFT);
+        setJoystickListener(joystickRight, Joystick.RIGHT);
 
 
         //DEBUG ACCELEROMETERS
@@ -193,11 +195,11 @@ public class ControlActivity extends Activity implements SensorEventListener{
         }
     }
 
-    private void setJoystickListener(JoystickView joystick, String dir){
+    private void setJoystickListener(JoystickView joystick, Joystick dir){
 
        switch(dir){
 
-           case "left":
+           case LEFT:
                joystick.setOnJoystickMoveListener(new JoystickView.OnJoystickMoveListener() {
                    @Override
                    public void onValueChanged(int angle, int power, int direction) {
@@ -235,7 +237,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
                    }
                }, JoystickView.DEFAULT_LOOP_INTERVAL);
                break;
-           case "right" :
+           case RIGHT:
                joystick.setOnJoystickMoveListener(new JoystickView.OnJoystickMoveListener() {
                    @Override
                    public void onValueChanged(int angle, int power, int direction) {
