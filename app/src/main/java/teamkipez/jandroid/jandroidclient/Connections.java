@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.BufferedWriter;
+import java.lang.Thread;
+import java.lang.Runnable;
+import java.net.UnknownHostException;
 
 public class Connections
 {
@@ -22,14 +25,20 @@ public class Connections
 
 	private void joystickConnect()
 	{
-		/*try
+		new Thread(new Runnable()
 		{
-			mJoystickSocket = new Socket(IP, PORT);
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-		}*/
+			public void run()
+			{
+				try
+				{
+					mJoystickSocket = new Socket(IP, PORT);
+				}
+				catch(IOException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}).start();
 	}
 
 	public static Connections getInstance()
@@ -65,7 +74,7 @@ public class Connections
 	{
 		try
 		{
-			mBufferedWriter.write(String.format("%04d", angle) + ":" + String.format("%03d", strength) + "\0");
+			mBufferedWriter.write(String.format("%04d", angle) + ":" + String.format("%04d", strength) + "\0");
 			mBufferedWriter.flush();
 		}
 		catch(IOException e)

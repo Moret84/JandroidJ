@@ -26,24 +26,22 @@ public class StartActivity extends AppCompatActivity {
 
         play = (Button) findViewById(R.id.button_play);
         play.setOnClickListener(playListener);
-        
-
     }
 
     private View.OnClickListener playListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
 
-            if(Connections.getInstance().joystickIsConnected()) {
+            //if(Connections.getInstance().joystickIsConnected()) {
 
                 Intent newActivity = new Intent();
                 newActivity.setClass(getApplicationContext(), ControlActivity.class);
                 startActivity(newActivity);
 
-            }else{
+            //}else{
 
-                Toast.makeText(getApplicationContext(), R.string.connection_not, Toast.LENGTH_SHORT).show();
-            }
+             //   Toast.makeText(getApplicationContext(), R.string.connection_not, Toast.LENGTH_SHORT).show();
+            //}
         }
     };
 
