@@ -1,68 +1,41 @@
 package teamkipez.jandroid.jandroidclient;
 
+import android.app.IntentService;
+import android.content.Intent;
 import java.net.Socket;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.BufferedWriter;
+import java.io.DataOutputStream;
 import java.lang.Thread;
 import java.lang.Runnable;
 import java.net.UnknownHostException;
+import android.util.Log;
 
-public class Connections
+public class Connections extends IntentService
 {
-	private static final Connections instance = new Connections();
+	//private static final Connections instance = new Connections();
 	public static String IP = "192.168.12.1";
 	public static int PORT = 23;
 
 	private Socket mJoystickSocket = null;
-	private BufferedWriter mBufferedWriter = null;
+	private DataOutputStream mDos = null;
 
-	private Connections()
+	public Connections(String name)
 	{
 		joystickConnect();
+	}
+
+	@Override
+	public void onHandleIntent(Intent intent)
+	{
+
 	}
 
 	private void joystickConnect()
 	{
-		new Thread(new Runnable()
-		{
-			public void run()
-			{
-				try
-				{
-					mJoystickSocket = new Socket(IP, PORT);
-				}
-				catch(IOException e)
-				{
-					e.printStackTrace();
-				}
-			}
-		}).start();
-	}
-
-	public static Connections getInstance()
-	{
-		return instance;
-	}
-
-	public void attemptJoystickConnection()
-	{
-		joystickConnect();
-	}
-
-	public boolean joystickIsConnected()
-	{
-		return (null != mJoystickSocket);
-	}
-
-	public void prepareInputSending()
-	{
 		try
 		{
-			OutputStream os = mJoystickSocket.getOutputStream();
-			OutputStreamWriter osw = new OutputStreamWriter(os);
-			mBufferedWriter = new BufferedWriter(osw);
+			mJoystickSocket = new Socket(IP, PORT);
+			mDos = new DataOutputStream(mJoystickSocket.getOutputStream());
 		}
 		catch(IOException e)
 		{
@@ -70,12 +43,28 @@ public class Connections
 		}
 	}
 
-	public void sendJoystickInput(int angle, int strength)
+	private static Connections getInstance()
+	{
+		//return instance;
+	}
+
+	private void attemptJoystickConnection()
+	{
+		joystickConnect();
+	}
+
+	private boolean joystickIsConnected()
+	{
+		return (null != mJoystickSocket);
+	}
+
+	private void sendJoystickInput(byte x, byte y)
 	{
 		try
 		{
-			mBufferedWriter.write(String.format("%04d", angle) + ":" + String.format("%04d", strength) + "\0");
-			mBufferedWriter.flush();
+			mDos.writeByte(x);
+			mDos.writeByte(y);
+			Log.i("jandroid", "j'ai envoyé ça pèse sa race " + x + " " + y);
 		}
 		catch(IOException e)
 		{

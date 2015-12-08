@@ -115,8 +115,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 				}
 			}
 		});
-		Connections.getInstance().attemptJoystickConnection();
-		Connections.getInstance().prepareInputSending();
+		//Connections.getInstance().attemptJoystickConnection();
 		//Check Accelerometers
 		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 		if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
@@ -217,13 +216,15 @@ public class ControlActivity extends Activity implements SensorEventListener{
 
 						angleTextView.setText("x " + String.valueOf(x));
 						powerTextView.setText("y " + String.valueOf(y));
-						Connections.getInstance().sendJoystickInput(x, y);
+						//Connections.getInstance().sendJoystickInput(x, y);
 					}
 
 					@Override
 					public void onUp()
 					{
-						Connections.getInstance().sendJoystickInput(0, 0);
+						angleTextView.setText("x " + 0);
+						powerTextView.setText("y " + 0);
+						//Connections.getInstance().sendJoystickInput((byte) 0, (byte) 0);
 					}
 				});
 			/*case RIGHT:

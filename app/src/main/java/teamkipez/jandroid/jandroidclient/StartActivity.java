@@ -21,7 +21,7 @@ public class StartActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
 
-		Connections.getInstance().attemptJoystickConnection();
+		//Connections.getInstance().attemptJoystickConnection();
         updateConnectionStatus();
 
         play = (Button) findViewById(R.id.button_play);
@@ -63,14 +63,14 @@ public class StartActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
 
-            if(!Connections.getInstance().joystickIsConnected())
-            {
-                Connections.getInstance().attemptJoystickConnection();
+            //if(!Connections.getInstance().joystickIsConnected())
+            //{
+             //   Connections.getInstance().attemptJoystickConnection();
                 updateConnectionStatus();
-            }
+            //}
 
-            else
-                Toast.makeText(getApplicationContext(), R.string.already_connected, Toast.LENGTH_SHORT).show();
+         //   else
+          //      Toast.makeText(getApplicationContext(), R.string.already_connected, Toast.LENGTH_SHORT).show();
             return true;
         }
 
@@ -80,13 +80,13 @@ public class StartActivity extends AppCompatActivity {
     private void updateConnectionStatus(){
 
         connectionStatusImg = (ImageView) findViewById(R.id.image_status);
-        if(Connections.getInstance().joystickIsConnected()){
-            connectionStatusImg.setBackgroundResource(R.drawable.actif);
-            Toast.makeText(getApplicationContext(), R.string.connection_success, Toast.LENGTH_LONG).show();
-        }else{
-            connectionStatusImg.setBackgroundResource(R.drawable.non_actif);
-            Toast.makeText(getApplicationContext(), R.string.connection_failed, Toast.LENGTH_LONG).show();
-        }
+        //if(Connections.getInstance().joystickIsConnected()){
+        //    connectionStatusImg.setBackgroundResource(R.drawable.actif);
+         //   Toast.makeText(getApplicationContext(), R.string.connection_success, Toast.LENGTH_LONG).show();
+        //}else{
+         //   connectionStatusImg.setBackgroundResource(R.drawable.non_actif);
+          //  Toast.makeText(getApplicationContext(), R.string.connection_failed, Toast.LENGTH_LONG).show();
+        //}
 
     }
 }
