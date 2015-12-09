@@ -20,11 +20,6 @@
             android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
             android:screenOrientation="landscape">
         </activity>
-
-		<service
-			android:name=".Connections"
-			android:exported="false"/>
-
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

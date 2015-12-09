@@ -14,7 +14,6 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.speech.RecognizerIntent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -31,7 +30,6 @@ import com.jmedeisis.bugstick.Joystick;
 import com.jmedeisis.bugstick.JoystickListener;
 
 import java.util.ArrayList;
-import java.util.Locale;
 import java.lang.Math;
 
 public class ControlActivity extends Activity implements SensorEventListener{
@@ -45,7 +43,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	private SensorManager sensorManager;
 	private Sensor accelerometer;
 	private Joystick joystickLeft;
-	private JoystickView joystickRight;
+	private Joystick joystickRight;
 	private ImageButton buttonSpeak;
 	private ImageButton buttonSensor;
 	boolean sensor = true;
@@ -90,11 +88,10 @@ public class ControlActivity extends Activity implements SensorEventListener{
 
 
 		//Joysticks
-		joystickRight = (JoystickView) findViewById(R.id.joystickRight);
+		joystickRight = (Joystick) findViewById(R.id.joystickRight);
 		joystickLeft = (Joystick) findViewById(R.id.joystick);
 		setJoystickListener(joystickLeft, Which_Joystick.LEFT);
 		//setJoystickListener(joystickRight, Which_Joystick.RIGHT);
-		//Connections.getInstance().prepareInputSending();
 
 
 		//DEBUG ACCELEROMETERS
@@ -199,8 +196,8 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		}
 	}
 
-	private void setJoystickListener(Joystick joystick, Which_Joystick dir){
-
+	private void setJoystickListener(Joystick joystick, Which_Joystick dir)
+	{
 		switch(dir)
 		{
 			case LEFT:
@@ -220,16 +217,8 @@ public class ControlActivity extends Activity implements SensorEventListener{
 						angleTextView.setText("x " + String.valueOf(x));
 						powerTextView.setText("y " + String.valueOf(y));
 
-						if(Connections.getInstance().mHandler != null)
-						{
-							Message msg = Connections.getInstance().mHandler.obtainMessage();
-							Bundle bundle = new Bundle();
-							bundle.putString("ACTION", "SEND");
-							bundle.putByte("X", x);
-							bundle.putByte("Y", y);
-							msg.setData(bundle);
-							Connections.getInstance().mHandler.sendMessage(msg);
-						}
+						sendJoystickInput(x, y);
+
 					}
 
 					@Override
@@ -237,25 +226,32 @@ public class ControlActivity extends Activity implements SensorEventListener{
 					{
 						angleTextView.setText("x " + 0);
 						powerTextView.setText("y " + 0);
-						//Connections.getInstance().sendJoystickInput((byte) 0, (byte) 0);
-						if(Connections.getInstance().mHandler != null)
-						{
-							Message msg = Connections.getInstance().mHandler.obtainMessage();
-							Bundle bundle = new Bundle();
-							bundle.putString("ACTION", "SEND");
-							bundle.putByte("X", (byte) 0);
-							bundle.putByte("Y", (byte) 0);
-							msg.setData(bundle);
-							Connections.getInstance().mHandler.sendMessage(msg);
-						}
+
+						sendJoystickInput((byte) 0, (byte) 0);
 					}
 				});
 		}
 	}
 
-	private void speechInput() {
+	private void sendJoystickInput(byte x, byte y)
+	{
+		if(Connections.getInstance().handler != null)
+		{
+			Message msg = Connections.getInstance().handler.obtainMessage();
+			msg.what = Connections.SEND;
+			Bundle bundle = new Bundle();
+			bundle.putByte(Connections.X, x);
+			bundle.putByte(Connections.Y, y);
+			msg.setData(bundle);
+			Connections.getInstance().handler.sendMessage(msg);
+		}
+	}
+
+	private void speechInput()
+	{
 		Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-		try {
+		try
+		{
 			startActivityForResult(intent, 100);
 		} catch (ActivityNotFoundException a) {
 			Toast.makeText(getApplicationContext(), R.string.wrong_string, Toast.LENGTH_SHORT).show();
@@ -263,23 +259,25 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	}
 
 	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
 		super.onActivityResult(requestCode, resultCode, data);
 
-		switch (requestCode) {
-			case 100: {
-						  if (resultCode == RESULT_OK && null != data) {
-							  ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-							  Toast.makeText(getApplicationContext(),result.get(0), Toast.LENGTH_SHORT).show();
-						  }
-						  break;
-			}
-
+		switch (requestCode)
+		{
+			case 100:
+				if (resultCode == RESULT_OK && null != data)
+				{
+					ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+					Toast.makeText(getApplicationContext(),result.get(0), Toast.LENGTH_SHORT).show();
+				}
+				break;
 		}
 	}
 
 	//onResume() register the accelerometer for listening the events
-	protected void onResume() {
+	protected void onResume()
+	{
 		super.onResume();
 		if(!sensor) {
 			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
@@ -288,16 +286,18 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	}
 
 	//onPause() unregister the accelerometer for stop listening the events
-	protected void onPause() {
+	protected void onPause()
+	{
 		super.onPause();
 		sensorManager.unregisterListener(this);
 	}
+
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
 	@Override
-	public void onSensorChanged(SensorEvent event) {
-
+	public void onSensorChanged(SensorEvent event)
+	{
 		float vx,vy,vz;
 		vx = event.values[0];
 		vy = event.values[1];

@@ -70,13 +70,27 @@
 		 android:layout_alignParentLeft="true"
 		 android:layout_alignParentStart="true" />
 
-	 <teamkipez.jandroid.jandroidclient.JoystickView
+	 <!--<teamkipez.jandroid.jandroidclient.JoystickView
 		 android:layout_width="150dp"
 		 android:layout_height="150dp"
 		 android:id="@+id/joystickRight"
 		 android:layout_alignBottom="@+id/videoView"
 		 android:layout_alignRight="@+id/videoView"
 		 android:layout_alignEnd="@+id/videoView" />
+-->
+	<com.jmedeisis.bugstick.Joystick
+		 android:id="@+id/joystickRight"
+		 android:layout_width="120dp"
+		 android:layout_height="wrap_content"
+		 android:background="@drawable/bg_base"
+		 android:layout_alignBottom="@+id/videoView"
+		 android:layout_alignRight="@+id/videoView"
+		 android:layout_alignEnd="@+id/videoView">
+		<Button	
+			android:layout_width="@dimen/stick_size"
+			android:layout_height="@dimen/stick_size"
+			android:background="@drawable/bg_stick" />
+	</com.jmedeisis.bugstick.Joystick>
 
 	 <ImageButton
 		 android:layout_width="75dip"

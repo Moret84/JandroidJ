@@ -1,6 +1,5 @@
 package teamkipez.jandroid.jandroidclient;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -21,9 +20,7 @@ public class StartActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
 
-		//Connections.getInstance().attemptJoystickConnection();
 		Connections.getInstance().start();
-        //updateConnectionStatus();
 
         play = (Button) findViewById(R.id.button_play);
         play.setOnClickListener(playListener);
