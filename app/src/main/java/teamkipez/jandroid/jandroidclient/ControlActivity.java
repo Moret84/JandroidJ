@@ -92,6 +92,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		joystickLeft = (Joystick) findViewById(R.id.joystick);
 		setJoystickListener(joystickLeft, Which_Joystick.LEFT);
 		//setJoystickListener(joystickRight, Which_Joystick.RIGHT);
+		Connections.getInstance().prepareInputSending();
 
 
 		//DEBUG ACCELEROMETERS
@@ -216,7 +217,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 
 						angleTextView.setText("x " + String.valueOf(x));
 						powerTextView.setText("y " + String.valueOf(y));
-						//Connections.getInstance().sendJoystickInput(x, y);
+						Connections.getInstance().sendJoystickInput(x, y);
 					}
 
 					@Override
@@ -224,54 +225,9 @@ public class ControlActivity extends Activity implements SensorEventListener{
 					{
 						angleTextView.setText("x " + 0);
 						powerTextView.setText("y " + 0);
-						//Connections.getInstance().sendJoystickInput((byte) 0, (byte) 0);
+						Connections.getInstance().sendJoystickInput((byte) 0, (byte) 0);
 					}
 				});
-			/*case RIGHT:
-			joystick.setOnJoystickMoveListener(new JoystickView.OnJoystickMoveListener() {
-			@Override
-			public void onValueChanged(int angle, int power, int direction, int x, int y) {
-			angleTextView.setText(" " + String.valueOf(angle) + "°");
-			powerTextView.setText(" " + String.valueOf(power) + "%");
-			switch (direction) {
-			case JoystickView.FRONT:
-			directionTextView.setText("front");
-			break;
-
-			case JoystickView.FRONT_RIGHT:
-			directionTextView.setText("Front-right");
-			break;
-
-			case JoystickView.RIGHT:
-			directionTextView.setText("Right");
-			break;
-
-			case JoystickView.RIGHT_BOTTOM:
-			directionTextView.setText("Right bottom");
-			break;
-
-			case JoystickView.BOTTOM:
-			directionTextView.setText("Bottom");
-			break;
-
-			case JoystickView.BOTTOM_LEFT:
-			directionTextView.setText("Bottom left");
-			break;
-
-			case JoystickView.LEFT:
-			directionTextView.setText("LEFT");
-			break;
-
-			case JoystickView.LEFT_FRONT:
-			directionTextView.setText("LEFT_FRONT");
-			break;
-
-			default:
-			directionTextView.setText("Center");
-			}
-			}
-			}, JoystickView.DEFAULT_LOOP_INTERVAL);
-			*/
 		}
 	}
 
@@ -290,11 +246,11 @@ public class ControlActivity extends Activity implements SensorEventListener{
 
 		switch (requestCode) {
 			case 100: {
-				if (resultCode == RESULT_OK && null != data) {
-					ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-					Toast.makeText(getApplicationContext(),result.get(0), Toast.LENGTH_SHORT).show();
-				}
-				break;
+						  if (resultCode == RESULT_OK && null != data) {
+							  ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+							  Toast.makeText(getApplicationContext(),result.get(0), Toast.LENGTH_SHORT).show();
+						  }
+						  break;
 			}
 
 		}

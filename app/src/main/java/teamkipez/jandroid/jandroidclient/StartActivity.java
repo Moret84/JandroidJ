@@ -21,8 +21,8 @@ public class StartActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
 
-		//Connections.getInstance().attemptJoystickConnection();
-        updateConnectionStatus();
+		Connections.getInstance().attemptJoystickConnection();
+        //updateConnectionStatus();
 
         play = (Button) findViewById(R.id.button_play);
         play.setOnClickListener(playListener);
