@@ -21,7 +21,8 @@ public class StartActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
 
-		Connections.getInstance().attemptJoystickConnection();
+		//Connections.getInstance().attemptJoystickConnection();
+		Connections.getInstance().start();
         //updateConnectionStatus();
 
         play = (Button) findViewById(R.id.button_play);
@@ -66,7 +67,7 @@ public class StartActivity extends AppCompatActivity {
             //if(!Connections.getInstance().joystickIsConnected())
             //{
              //   Connections.getInstance().attemptJoystickConnection();
-                updateConnectionStatus();
+                //updateConnectionStatus();
             //}
 
          //   else

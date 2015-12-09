@@ -14,6 +14,8 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.speech.RecognizerIntent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
@@ -92,7 +94,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		joystickLeft = (Joystick) findViewById(R.id.joystick);
 		setJoystickListener(joystickLeft, Which_Joystick.LEFT);
 		//setJoystickListener(joystickRight, Which_Joystick.RIGHT);
-		Connections.getInstance().prepareInputSending();
+		//Connections.getInstance().prepareInputSending();
 
 
 		//DEBUG ACCELEROMETERS
@@ -217,7 +219,17 @@ public class ControlActivity extends Activity implements SensorEventListener{
 
 						angleTextView.setText("x " + String.valueOf(x));
 						powerTextView.setText("y " + String.valueOf(y));
-						Connections.getInstance().sendJoystickInput(x, y);
+
+						if(Connections.getInstance().mHandler != null)
+						{
+							Message msg = Connections.getInstance().mHandler.obtainMessage();
+							Bundle bundle = new Bundle();
+							bundle.putString("ACTION", "SEND");
+							bundle.putByte("X", x);
+							bundle.putByte("Y", y);
+							msg.setData(bundle);
+							Connections.getInstance().mHandler.sendMessage(msg);
+						}
 					}
 
 					@Override
@@ -225,7 +237,17 @@ public class ControlActivity extends Activity implements SensorEventListener{
 					{
 						angleTextView.setText("x " + 0);
 						powerTextView.setText("y " + 0);
-						Connections.getInstance().sendJoystickInput((byte) 0, (byte) 0);
+						//Connections.getInstance().sendJoystickInput((byte) 0, (byte) 0);
+						if(Connections.getInstance().mHandler != null)
+						{
+							Message msg = Connections.getInstance().mHandler.obtainMessage();
+							Bundle bundle = new Bundle();
+							bundle.putString("ACTION", "SEND");
+							bundle.putByte("X", (byte) 0);
+							bundle.putByte("Y", (byte) 0);
+							msg.setData(bundle);
+							Connections.getInstance().mHandler.sendMessage(msg);
+						}
 					}
 				});
 		}
