@@ -12,9 +12,10 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.speech.RecognizerIntent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Message;
+import android.speech.RecognizerIntent;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
@@ -29,14 +30,32 @@ import android.widget.VideoView;
 import com.jmedeisis.bugstick.Joystick;
 import com.jmedeisis.bugstick.JoystickListener;
 
-import java.util.ArrayList;
+import com.camera.simplemjpeg.MjpegView;
+import com.camera.simplemjpeg.MjpegInputStream;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+
+import java.io.IOException;
 import java.lang.Math;
+import java.net.URI;
+import java.util.ArrayList;
 
 public class ControlActivity extends Activity implements SensorEventListener{
 
+	private static final boolean DEBUG = false;
+	private static final String TAG = "MJPEG";
 	private static ProgressDialog progressDialog;
-	VideoView videoView;
-	String url = "https://archive.org/download/ksnn_compilation_master_the_internet/ksnn_compilation_master_the_internet_512kb.mp4";
+	private MjpegView videoView = null;
+//	String URL = "http://192.168.12.1:8090/?action=stream";
+	String URL = "http://mjpeg.sanford.io/count.mjpeg";
+	private int width = 640;
+	private int height = 480;
+	private boolean suspending = false;
 
 	public enum Which_Joystick{LEFT, RIGHT};
 
@@ -64,11 +83,18 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		setContentView(R.layout.activity_control);
 
 		//Settings viewComponents
-		videoView = (VideoView) findViewById(R.id.videoView);
-		progressDialog = ProgressDialog.show(ControlActivity.this, "", "Buffering video...", true);
-		progressDialog.setCancelable(true);
+		//videoView = (VideoView) findViewById(R.id.videoView);
+		//progressDialog = ProgressDialog.show(ControlActivity.this, "", "Buffering video...", true);
+		//progressDialog.setCancelable(true);
 
-		//Speack Reco
+		videoView = (MjpegView) findViewById(R.id.mv);
+		if (videoView != null)
+			videoView.setResolution(width, height);
+
+		//setTitle(R.string.title_connecting);
+		new DoRead().execute(URL);
+
+		//Speak Reco
 		buttonSpeak = (ImageButton) findViewById(R.id.button_speach);
 		buttonSpeak.setOnClickListener(new View.OnClickListener() {
 
@@ -128,12 +154,12 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		}
 
 		//Force full Screen
-		DisplayMetrics metrics = new DisplayMetrics(); getWindowManager().getDefaultDisplay().getMetrics(metrics);
-		android.widget.RelativeLayout.LayoutParams params = (android.widget.RelativeLayout.LayoutParams) videoView.getLayoutParams();
-		params.width =  metrics.widthPixels;
-		params.height = metrics.heightPixels;
-		params.leftMargin = 0;
-		videoView.setLayoutParams(params);
+		//DisplayMetrics metrics = new DisplayMetrics(); getWindowManager().getDefaultDisplay().getMetrics(metrics);
+		//android.widget.RelativeLayout.LayoutParams params = (android.widget.RelativeLayout.LayoutParams) videoView.getLayoutParams();
+		//params.width =  metrics.widthPixels;
+		//params.height = metrics.heightPixels;
+		//params.leftMargin = 0;
+		//videoView.setLayoutParams(params);
 
 		//Play the video
 		//        PlayVideo();
@@ -162,7 +188,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 
 		return super.onOptionsItemSelected(item);
 	}
-
+/*
 	private void PlayVideo()
 	{
 		try
@@ -177,16 +203,13 @@ public class ControlActivity extends Activity implements SensorEventListener{
 			videoView.setVideoURI(video);
 			videoView.requestFocus();
 			videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener()
-					{
-
-						public void onPrepared(MediaPlayer mp)
-						{
-							progressDialog.dismiss();
-							videoView.start();
-						}
-					});
-
-
+			{
+				public void onPrepared(MediaPlayer mp)
+				{
+					progressDialog.dismiss();
+					videoView.start();
+				}
+			});
 		}
 		catch(Exception e)
 		{
@@ -195,6 +218,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 			finish();
 		}
 	}
+*/
 
 	private void setJoystickListener(Joystick joystick, Which_Joystick dir)
 	{
@@ -279,17 +303,38 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	protected void onResume()
 	{
 		super.onResume();
-		if(!sensor) {
+		if(!sensor)
 			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-		}else
+		else
 			sensor = false;
+
+		if(videoView != null)
+			if(suspending)
+			{
+				new DoRead().execute(URL);
+				suspending = false;
+			}
 	}
 
 	//onPause() unregister the accelerometer for stop listening the events
 	protected void onPause()
 	{
 		super.onPause();
+		if (videoView != null)
+			if (videoView.isStreaming())
+			{
+				videoView.stopPlayback();
+				suspending = true;
+			}
 		sensorManager.unregisterListener(this);
+	}
+
+	public void onDestroy()
+	{
+		if (videoView != null)
+			videoView.freeCameraMemory();
+
+		super.onDestroy();
 	}
 
 	@Override
@@ -307,5 +352,64 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		y.setText(Float.toString(vy));
 		z.setText(Float.toString(vz));
 	}
-}
 
+	public class DoRead extends AsyncTask<String, Void, MjpegInputStream>
+	{
+		protected MjpegInputStream doInBackground(String... url)
+		{
+			//TODO: if camera has authentication deal with it and don't just not work
+			HttpResponse res = null;
+			DefaultHttpClient httpclient = new DefaultHttpClient();
+			HttpParams httpParams = httpclient.getParams();
+			HttpConnectionParams.setConnectionTimeout(httpParams, 5 * 1000);
+			HttpConnectionParams.setSoTimeout(httpParams, 5 * 1000);
+			if (DEBUG) Log.d(TAG, "1. Sending http request");
+			try {
+				res = httpclient.execute(new HttpGet(URI.create(url[0])));
+				if (DEBUG)
+					Log.d(TAG, "2. Request finished, status = " + res.getStatusLine().getStatusCode());
+				if (res.getStatusLine().getStatusCode() == 401) {
+					//You must turn off camera User Access Control before this will work
+					return null;
+				}
+				return new MjpegInputStream(res.getEntity().getContent());
+			} catch (ClientProtocolException e) {
+				if (DEBUG) {
+					e.printStackTrace();
+					Log.d(TAG, "Request failed-ClientProtocolException", e);
+				}
+				//Error connecting to camera
+			} catch (IOException e) {
+				if (DEBUG) {
+					e.printStackTrace();
+					Log.d(TAG, "Request failed-IOException", e);
+				}
+				//Error connecting to camera
+			}
+			return null;
+		}
+
+		protected void onPostExecute(MjpegInputStream result) {
+			videoView.setSource(result);
+			if (result != null) {
+				result.setSkip(1);
+				setTitle(R.string.app_name);
+			} else {
+				//setTitle(R.string.title_disconnected);
+			}
+			videoView.setDisplayMode(MjpegView.SIZE_BEST_FIT);
+			videoView.showFps(false);
+		}
+	}
+
+	public class RestartApp extends AsyncTask<Void, Void, Void> {
+		protected Void doInBackground(Void... v) {
+			ControlActivity.this.finish();
+			return null;
+		}
+
+		protected void onPostExecute(Void v) {
+			startActivity((new Intent(ControlActivity.this, ControlActivity.class)));
+		}
+	}
+}
