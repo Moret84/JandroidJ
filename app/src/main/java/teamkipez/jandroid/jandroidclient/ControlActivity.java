@@ -1,31 +1,22 @@
 package teamkipez.jandroid.jandroidclient;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.PixelFormat;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.media.MediaPlayer;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Message;
 import android.speech.RecognizerIntent;
-import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.VideoView;
 
 import com.jmedeisis.bugstick.Joystick;
 import com.jmedeisis.bugstick.JoystickListener;
@@ -33,38 +24,23 @@ import com.jmedeisis.bugstick.JoystickListener;
 import com.camera.simplemjpeg.MjpegView;
 import com.camera.simplemjpeg.MjpegInputStream;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
-
-import java.io.IOException;
 import java.lang.Math;
-import java.net.URI;
 import java.util.ArrayList;
 
 public class ControlActivity extends Activity implements SensorEventListener{
 
-	private static final boolean DEBUG = false;
-	private static final String TAG = "MJPEG";
-	private static ProgressDialog progressDialog;
 	private MjpegView videoView = null;
 	private static final String URL = "http://192.168.12.1:8090/?action=stream";
 	//private static String URL = "http://mjpeg.sanford.io/count.mjpeg";
-	private int width = 640;
-	private int height = 480;
 	private boolean suspending = false;
 
-	public enum Which_Joystick{LEFT, RIGHT};
 
 	private SensorManager sensorManager;
 	private Sensor accelerometer;
-	private Joystick joystickLeft;
-	private Joystick joystickRight;
-	private ImageButton buttonSpeak;
-	private ImageButton buttonSensor;
+	private Joystick leftJoystick;
+	private Joystick rightJoystick;
+	private ImageButton speakButton;
+	private ImageButton sensorButton;
 	boolean sensor = true;
 
 	//DEBUG
@@ -82,11 +58,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_control);
 
-		//Settings viewComponents
-		//videoView = (VideoView) findViewById(R.id.videoView);
-		//progressDialog = ProgressDialog.show(ControlActivity.this, "", "Buffering video...", true);
-		//progressDialog.setCancelable(true);
-
+		//Video
 		videoView = (MjpegView) findViewById(R.id.mv);
 		new Thread(new Runnable()
 		{
@@ -96,31 +68,26 @@ public class ControlActivity extends Activity implements SensorEventListener{
 			}
 		}).start();
 
-		//Speak Reco
-		/*buttonSpeak = (ImageButton) findViewById(R.id.button_speach);
-		buttonSpeak.setOnClickListener(new View.OnClickListener() {
+		//Speak Recognition
+		speakButton = (ImageButton) findViewById(R.id.button_speach);
+		speakButton.setOnClickListener(new View.OnClickListener() {
 
 			@Override
 			public void onClick(View v) {
 				speechInput();
 			}
 		});
-		*/
-
-		//PlayVideo();
-
 
 		//Debugs Joystick
-		/*angleTextView = (TextView) findViewById(R.id.angleTextView);
+		angleTextView = (TextView) findViewById(R.id.angleTextView);
 		powerTextView = (TextView) findViewById(R.id.powerTextView);
 		directionTextView = (TextView) findViewById(R.id.directionTextView);
 
 
 		//Joysticks
-		joystickRight = (Joystick) findViewById(R.id.joystickRight);
-		joystickLeft = (Joystick) findViewById(R.id.joystick);
-		setJoystickListener(joystickLeft, Which_Joystick.LEFT);
-		//setJoystickListener(joystickRight, Which_Joystick.RIGHT);
+		rightJoystick = (Joystick) findViewById(R.id.joystickRight);
+		leftJoystick = (Joystick) findViewById(R.id.joystick);
+		initJoysticks();
 
 
 		//DEBUG ACCELEROMETERS
@@ -128,8 +95,8 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		y = (TextView) findViewById(R.id.y);
 		z = (TextView) findViewById(R.id.z);
 
-		buttonSensor = (ImageButton) findViewById(R.id.button_sensor);
-		buttonSensor.setOnClickListener(new View.OnClickListener() {
+		sensorButton = (ImageButton) findViewById(R.id.button_sensor);
+		sensorButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 
@@ -144,33 +111,20 @@ public class ControlActivity extends Activity implements SensorEventListener{
 				}
 			}
 		});
-		//Connections.getInstance().attemptJoystickConnection();
+
 		//Check Accelerometers
 		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-		if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
+		if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null)
+		{
 			accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 			onPause();
-		} else {
+		}
+		else
+		{
 
 			//HIDE THE BUTTON
-
 		}
-
-		//Force full Screen
-		//DisplayMetrics metrics = new DisplayMetrics(); getWindowManager().getDefaultDisplay().getMetrics(metrics);
-		//android.widget.RelativeLayout.LayoutParams params = (android.widget.RelativeLayout.LayoutParams) videoView.getLayoutParams();
-		//params.width =  metrics.widthPixels;
-		//params.height = metrics.heightPixels;
-		//params.leftMargin = 0;
-		//videoView.setLayoutParams(params);
-
-		//Play the video
-		//        PlayVideo();
-
-		*/
 	}
-
-
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -194,41 +148,40 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		return super.onOptionsItemSelected(item);
 	}
 
-	/*private void setJoystickListener(Joystick joystick, Which_Joystick dir)
+	private void initJoysticks()
 	{
-		switch(dir)
+		JoystickListener listener = new JoystickListener()
 		{
-			case LEFT:
-				joystick.setJoystickListener(new JoystickListener() {
-					@Override
-					public void onDown()
-					{
-					}
+			@Override
+			public void onDown()
+			{
+			}
 
-					@Override
-					public void onDrag(float degrees, float offset)
-					{
-						offset *= 100.0;
-						byte x = (byte) (Math.cos(Math.toRadians(degrees)) * offset);
-						byte y = (byte) (Math.sin(Math.toRadians(degrees)) * offset);
+			@Override
+			public void onDrag(float degrees, float offset)
+			{
+				offset *= 100.0;
+				byte x = (byte) (Math.cos(Math.toRadians(degrees)) * offset);
+				byte y = (byte) (Math.sin(Math.toRadians(degrees)) * offset);
 
-						angleTextView.setText("x " + String.valueOf(x));
-						powerTextView.setText("y " + String.valueOf(y));
+				angleTextView.setText("x " + String.valueOf(x));
+				powerTextView.setText("y " + String.valueOf(y));
 
-						sendJoystickInput(x, y);
+				sendJoystickInput(x, y);
 
-					}
+			}
 
-					@Override
-					public void onUp()
-					{
-						angleTextView.setText("x " + 0);
-						powerTextView.setText("y " + 0);
+			@Override
+			public void onUp()
+			{
+				angleTextView.setText("x " + 0);
+				powerTextView.setText("y " + 0);
 
-						sendJoystickInput((byte) 0, (byte) 0);
-					}
-				});
-		}
+				sendJoystickInput((byte) 0, (byte) 0);
+			}
+		};
+
+		leftJoystick.setJoystickListener(listener);
 	}
 
 	private void sendJoystickInput(byte x, byte y)
@@ -255,7 +208,6 @@ public class ControlActivity extends Activity implements SensorEventListener{
 			Toast.makeText(getApplicationContext(), R.string.wrong_string, Toast.LENGTH_SHORT).show();
 		}
 	}
-	*/
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
@@ -278,16 +230,16 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	protected void onResume()
 	{
 		super.onResume();
-	/*	if(!sensor)
+		if(!sensor)
 			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 		else
 			sensor = false;
-			*/
+
 
 		if(videoView != null)
 			if(suspending)
 			{
-				//new DoRead().execute(URL);
+				videoView.startPlayback();
 				suspending = false;
 			}
 	}
@@ -297,7 +249,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	{
 		super.onPause();
 		videoView.stopPlayback();
-		//sensorManager.unregisterListener(this);
+		suspending = true;
 	}
 
 	public void onDestroy()
