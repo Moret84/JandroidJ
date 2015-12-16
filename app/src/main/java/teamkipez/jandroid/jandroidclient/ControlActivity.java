@@ -14,6 +14,8 @@ import android.speech.RecognizerIntent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,6 +35,8 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	private static final String URL = "http://192.168.12.1:8090/?action=stream";
 	//private static String URL = "http://mjpeg.sanford.io/count.mjpeg";
 	private boolean suspending = false;
+	public static byte MotorHeader = 'M';
+	public static byte CamHeader = 'C';
 
 
 	private SensorManager sensorManager;
@@ -56,10 +60,14 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	protected void onCreate(Bundle savedInstanceState) {
 
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+				WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.activity_control);
 
 		//Video
 		videoView = (MjpegView) findViewById(R.id.mv);
+		videoView.setDisplayMode(MjpegView.SIZE_FULLSCREEN);
 		new Thread(new Runnable()
 		{
 			public void run()
@@ -167,7 +175,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 				angleTextView.setText("x " + String.valueOf(x));
 				powerTextView.setText("y " + String.valueOf(y));
 
-				sendJoystickInput(x, y);
+				sendJoystickInput(MotorHeader, x, y);
 
 			}
 
@@ -177,20 +185,21 @@ public class ControlActivity extends Activity implements SensorEventListener{
 				angleTextView.setText("x " + 0);
 				powerTextView.setText("y " + 0);
 
-				sendJoystickInput((byte) 0, (byte) 0);
+				sendJoystickInput(MotorHeader, (byte) 0, (byte) 0);
 			}
 		};
 
 		leftJoystick.setJoystickListener(listener);
 	}
 
-	private void sendJoystickInput(byte x, byte y)
+	private void sendJoystickInput(byte header, byte x, byte y)
 	{
 		if(Connections.getInstance().handler != null)
 		{
 			Message msg = Connections.getInstance().handler.obtainMessage();
 			msg.what = Connections.SEND;
 			Bundle bundle = new Bundle();
+			bundle.putByte(Connections.HEADER, header);
 			bundle.putByte(Connections.X, x);
 			bundle.putByte(Connections.Y, y);
 			msg.setData(bundle);

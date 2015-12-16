@@ -18,6 +18,7 @@ public class Connections extends Thread
 	public static int PORT = 23;
 	public static final int SEND = 1;
 	public static final int STATE = 2;
+	public static String HEADER = "HEADER";
 	public static String X = "X";
 	public static String Y = "Y";
 
@@ -55,7 +56,7 @@ public class Connections extends Thread
 				switch(action)
 				{
 					case(SEND):
-						sendJoystickInput(bundle.getByte("X"), bundle.getByte("Y"));
+						sendJoystickInput(bundle.getByte(HEADER), bundle.getByte(X), bundle.getByte(Y));
 						break;
 					case(STATE):
 						break;
@@ -76,10 +77,11 @@ public class Connections extends Thread
 		return (null != mJoystickSocket);
 	}
 
-	private void sendJoystickInput(byte x, byte y)
+	private void sendJoystickInput(byte header, byte x, byte y)
 	{
 		try
 		{
+			mDos.writeByte(header);
 			mDos.writeByte(x);
 			mDos.writeByte(y);
 			Log.i("jandroid", "j'ai envoyé ça pèse sa race " + x + " " + y);
