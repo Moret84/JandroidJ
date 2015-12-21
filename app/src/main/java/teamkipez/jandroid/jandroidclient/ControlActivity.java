@@ -43,6 +43,8 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	private Sensor accelerometer;
 	private Joystick leftJoystick;
 	private Joystick rightJoystick;
+	private JoystickListener leftListener;
+	private JoystickListener rightListener;
 	private ImageButton speakButton;
 	private ImageButton sensorButton;
 	boolean sensor = true;
@@ -91,11 +93,12 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		powerTextView = (TextView) findViewById(R.id.powerTextView);
 		directionTextView = (TextView) findViewById(R.id.directionTextView);
 
-
 		//Joysticks
 		rightJoystick = (Joystick) findViewById(R.id.joystickRight);
 		leftJoystick = (Joystick) findViewById(R.id.joystick);
 		initJoysticks();
+		leftJoystick.setJoystickListener(leftListener);
+		rightJoystick.setJoystickListener(rightListener);
 
 
 		//DEBUG ACCELEROMETERS
@@ -158,7 +161,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 
 	private void initJoysticks()
 	{
-		JoystickListener listener = new JoystickListener()
+		leftListener = new JoystickListener()
 		{
 			@Override
 			public void onDown()
@@ -176,7 +179,6 @@ public class ControlActivity extends Activity implements SensorEventListener{
 				powerTextView.setText("y " + String.valueOf(y));
 
 				sendJoystickInput(MotorHeader, x, y);
-
 			}
 
 			@Override
@@ -189,10 +191,38 @@ public class ControlActivity extends Activity implements SensorEventListener{
 			}
 		};
 
-		leftJoystick.setJoystickListener(listener);
+		rightListener = new JoystickListener()
+		{
+			@Override
+			public void onDown()
+			{
+			}
+
+			@Override
+			public void onDrag(float degrees, float offset)
+			{
+				offset *= 100.0;
+				byte x = (byte) (Math.cos(Math.toRadians(degrees)) * offset);
+				byte y = (byte) (Math.sin(Math.toRadians(degrees)) * offset);
+
+				angleTextView.setText("x " + String.valueOf(x));
+				powerTextView.setText("y " + String.valueOf(y));
+
+				sendJoystickInput(CamHeader, x, y);
+			}
+
+			@Override
+			public void onUp()
+			{
+				angleTextView.setText("x " + 0);
+				powerTextView.setText("y " + 0);
+
+				sendJoystickInput(CamHeader, (byte) 0, (byte) 0);
+			}
+		};
 	}
 
-	private void sendJoystickInput(byte header, byte x, byte y)
+	private void sendJoystickInput(final byte header, final byte x, final byte y)
 	{
 		if(Connections.getInstance().handler != null)
 		{
@@ -244,7 +274,6 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		else
 			sensor = false;
 
-
 		if(videoView != null)
 			if(suspending)
 			{
@@ -267,7 +296,9 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	}
 
 	@Override
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+	public void onAccuracyChanged(Sensor sensor, int accuracy)
+	{
+	}
 
 	//@Override
 	public void onSensorChanged(SensorEvent event)

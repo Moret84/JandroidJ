@@ -10,7 +10,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-public class StartActivity extends AppCompatActivity {
+public class StartActivity extends AppCompatActivity implements IConnectionState {
 
     Button play, connect;
     ImageView connectionStatusImg;
@@ -20,8 +20,10 @@ public class StartActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
 
+		Connections.getInstance().setConnectionStateListener(this);
 		Connections.getInstance().start();
 
+        connectionStatusImg = (ImageView) findViewById(R.id.image_status);
         play = (Button) findViewById(R.id.button_play);
         play.setOnClickListener(playListener);
     }
@@ -30,16 +32,9 @@ public class StartActivity extends AppCompatActivity {
         @Override
         public void onClick(View v) {
 
-            //if(Connections.getInstance().joystickIsConnected()) {
-
-                Intent newActivity = new Intent();
-                newActivity.setClass(getApplicationContext(), ControlActivity.class);
-                startActivity(newActivity);
-
-            //}else{
-
-             //   Toast.makeText(getApplicationContext(), R.string.connection_not, Toast.LENGTH_SHORT).show();
-            //}
+			Intent newActivity = new Intent();
+			newActivity.setClass(getApplicationContext(), ControlActivity.class);
+			startActivity(newActivity);
         }
     };
 
@@ -61,30 +56,31 @@ public class StartActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
 
-            //if(!Connections.getInstance().joystickIsConnected())
-            //{
-             //   Connections.getInstance().attemptJoystickConnection();
-                //updateConnectionStatus();
-            //}
+			Connections.getInstance().connect();
 
-         //   else
-          //      Toast.makeText(getApplicationContext(), R.string.already_connected, Toast.LENGTH_SHORT).show();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-    private void updateConnectionStatus(){
+	@Override
+	public void onConnectionSuccess()
+	{
+		connectionStatusImg.setBackgroundResource(R.drawable.actif);
+		Toast.makeText(getApplicationContext(), R.string.connection_success, Toast.LENGTH_LONG).show();
+	}
 
-        connectionStatusImg = (ImageView) findViewById(R.id.image_status);
-        //if(Connections.getInstance().joystickIsConnected()){
-        //    connectionStatusImg.setBackgroundResource(R.drawable.actif);
-         //   Toast.makeText(getApplicationContext(), R.string.connection_success, Toast.LENGTH_LONG).show();
-        //}else{
-         //   connectionStatusImg.setBackgroundResource(R.drawable.non_actif);
-          //  Toast.makeText(getApplicationContext(), R.string.connection_failed, Toast.LENGTH_LONG).show();
-        //}
+	@Override
+	public void onConnectionFail()
+	{
+		connectionStatusImg.setBackgroundResource(R.drawable.non_actif);
+		Toast.makeText(getApplicationContext(), R.string.connection_failed, Toast.LENGTH_LONG).show();
+	}
 
-    }
+	@Override
+	public void alreadyConnected()
+	{
+		Toast.makeText(getApplicationContext(), R.string.already_connected, Toast.LENGTH_LONG).show();
+	}
 }

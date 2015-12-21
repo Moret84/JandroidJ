@@ -26,25 +26,42 @@ public class Connections extends Thread
 
 	private Socket mJoystickSocket = null;
 	private DataOutputStream mDos = null;
+	private IConnectionState mConnectionState;
 
 	private Connections()
 	{
 	}
 
-	@Override
-	public void run()
+	public void setConnectionStateListener(IConnectionState connectionStateListener)
+	{
+		mConnectionState = connectionStateListener;
+	}
+
+	public void connect()
 	{
 		try
 		{
-			mJoystickSocket = new Socket(IP, PORT);
-			mDos = new DataOutputStream(mJoystickSocket.getOutputStream());
+			if(isConnected())
+				mConnectionState.alreadyConnected();
+			else
+			{
+				mJoystickSocket = new Socket(IP, PORT);
+				mDos = new DataOutputStream(mJoystickSocket.getOutputStream());
+				mConnectionState.onConnectionSuccess();
+			}
 		}
 		catch(IOException e)
 		{
 			e.printStackTrace();
+			mConnectionState.onConnectionFail();
 		}
+	}
 
+	@Override
+	public void run()
+	{
 		Looper.prepare();
+		connect();
 
 		handler = new Handler()
 		{
@@ -72,19 +89,22 @@ public class Connections extends Thread
 		return instance;
 	}
 
-	private boolean joystickIsConnected()
+	private boolean isConnected()
 	{
-		return (null != mJoystickSocket);
+		return (null != mJoystickSocket) && (null != mDos);
 	}
 
 	private void sendJoystickInput(byte header, byte x, byte y)
 	{
 		try
 		{
-			mDos.writeByte(header);
-			mDos.writeByte(x);
-			mDos.writeByte(y);
-			Log.i("jandroid", "j'ai envoyé ça pèse sa race " + x + " " + y);
+			if(isConnected())
+			{
+				mDos.writeByte(header);
+				mDos.writeByte(x);
+				mDos.writeByte(y);
+				Log.i("jandroid, " + header, "j'ai envoyé ça pèse sa race " + x + " " + y);
+			}
 		}
 		catch(IOException e)
 		{
