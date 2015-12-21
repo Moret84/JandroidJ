@@ -18,11 +18,14 @@ public class Connections extends Thread
 	public static int PORT = 23;
 	public static final int SEND = 1;
 	public static final int STATE = 2;
+	public static final int CONNECT = 3;
 	public static String HEADER = "HEADER";
 	public static String X = "X";
 	public static String Y = "Y";
 
 	public Handler handler;
+
+	private Handler mUIHandler;
 
 	private Socket mJoystickSocket = null;
 	private DataOutputStream mDos = null;
@@ -30,31 +33,12 @@ public class Connections extends Thread
 
 	private Connections()
 	{
+		mUIHandler = new Handler(Looper.getMainLooper());
 	}
 
 	public void setConnectionStateListener(IConnectionState connectionStateListener)
 	{
 		mConnectionState = connectionStateListener;
-	}
-
-	public void connect()
-	{
-		try
-		{
-			if(isConnected())
-				mConnectionState.alreadyConnected();
-			else
-			{
-				mJoystickSocket = new Socket(IP, PORT);
-				mDos = new DataOutputStream(mJoystickSocket.getOutputStream());
-				mConnectionState.onConnectionSuccess();
-			}
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-			mConnectionState.onConnectionFail();
-		}
 	}
 
 	@Override
@@ -76,6 +60,9 @@ public class Connections extends Thread
 						sendJoystickInput(bundle.getByte(HEADER), bundle.getByte(X), bundle.getByte(Y));
 						break;
 					case(STATE):
+						break;
+					case(CONNECT):
+						connect();
 						break;
 				}
 			}
@@ -109,6 +96,40 @@ public class Connections extends Thread
 		catch(IOException e)
 		{
 			e.printStackTrace();
+		}
+	}
+
+	private void connect()
+	{
+		try
+		{
+			if(isConnected())
+				mConnectionState.alreadyConnected();
+			else
+			{
+				mJoystickSocket = new Socket(IP, PORT);
+				mDos = new DataOutputStream(mJoystickSocket.getOutputStream());
+				mUIHandler.post(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						mConnectionState.onConnectionSuccess();
+					}
+				});
+			}
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+			mUIHandler.post(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					mConnectionState.onConnectionFail();
+				}
+			});
 		}
 	}
 }

@@ -43,11 +43,9 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	private Sensor accelerometer;
 	private Joystick leftJoystick;
 	private Joystick rightJoystick;
-	private JoystickListener leftListener;
-	private JoystickListener rightListener;
 	private ImageButton speakButton;
 	private ImageButton sensorButton;
-	boolean sensor = true;
+	boolean sensor = false;
 
 	//DEBUG
 	private TextView angleTextView;
@@ -96,10 +94,9 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		//Joysticks
 		rightJoystick = (Joystick) findViewById(R.id.joystickRight);
 		leftJoystick = (Joystick) findViewById(R.id.joystick);
-		initJoysticks();
-		leftJoystick.setJoystickListener(leftListener);
-		rightJoystick.setJoystickListener(rightListener);
 
+		leftJoystick.setJoystickListener(initJoystick(MotorHeader));
+		rightJoystick.setJoystickListener(initJoystick(CamHeader));
 
 		//DEBUG ACCELEROMETERS
 		x = (TextView) findViewById(R.id.x);
@@ -107,33 +104,44 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		z = (TextView) findViewById(R.id.z);
 
 		sensorButton = (ImageButton) findViewById(R.id.button_sensor);
+
 		sensorButton.setOnClickListener(new View.OnClickListener() {
 			@Override
-			public void onClick(View v) {
+			public void onClick(View v)
+			{
 
-				if (sensor) {
-					onPause();
-					sensor = false;
-					Toast.makeText(getApplicationContext(), R.string.resume, Toast.LENGTH_SHORT).show();
-				} else {
-					onResume();
-					sensor = true;
-					Toast.makeText(getApplicationContext(), R.string.pause, Toast.LENGTH_SHORT).show();
-				}
+				if(sensor)
+					enableSensor();
+				else
+					disableSensor();
 			}
 		});
 
 		//Check Accelerometers
 		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 		if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null)
-		{
 			accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-			onPause();
-		}
 		else
-		{
+			sensorButton.setVisibility(View.INVISIBLE);
+	}
 
-			//HIDE THE BUTTON
+	private void enableSensor()
+	{
+		if(null != accelerometer)
+		{
+			sensor = true;
+			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+			Toast.makeText(getApplicationContext(), R.string.resume, Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	private void disableSensor()
+	{
+		if(null != accelerometer)
+		{
+			sensor = false;
+			sensorManager.unregisterListener(this);
+			Toast.makeText(getApplicationContext(), R.string.resume, Toast.LENGTH_SHORT).show();
 		}
 	}
 
@@ -159,9 +167,9 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		return super.onOptionsItemSelected(item);
 	}
 
-	private void initJoysticks()
+	private JoystickListener initJoystick(final byte which)
 	{
-		leftListener = new JoystickListener()
+		return new JoystickListener()
 		{
 			@Override
 			public void onDown()
@@ -178,7 +186,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 				angleTextView.setText("x " + String.valueOf(x));
 				powerTextView.setText("y " + String.valueOf(y));
 
-				sendJoystickInput(MotorHeader, x, y);
+				sendJoystickInput(which, x, y);
 			}
 
 			@Override
@@ -187,37 +195,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 				angleTextView.setText("x " + 0);
 				powerTextView.setText("y " + 0);
 
-				sendJoystickInput(MotorHeader, (byte) 0, (byte) 0);
-			}
-		};
-
-		rightListener = new JoystickListener()
-		{
-			@Override
-			public void onDown()
-			{
-			}
-
-			@Override
-			public void onDrag(float degrees, float offset)
-			{
-				offset *= 100.0;
-				byte x = (byte) (Math.cos(Math.toRadians(degrees)) * offset);
-				byte y = (byte) (Math.sin(Math.toRadians(degrees)) * offset);
-
-				angleTextView.setText("x " + String.valueOf(x));
-				powerTextView.setText("y " + String.valueOf(y));
-
-				sendJoystickInput(CamHeader, x, y);
-			}
-
-			@Override
-			public void onUp()
-			{
-				angleTextView.setText("x " + 0);
-				powerTextView.setText("y " + 0);
-
-				sendJoystickInput(CamHeader, (byte) 0, (byte) 0);
+				sendJoystickInput(which, (byte) 0, (byte) 0);
 			}
 		};
 	}
@@ -265,14 +243,12 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		}
 	}
 
-	//onResume() register the accelerometer for listening the events
 	protected void onResume()
 	{
 		super.onResume();
-		if(!sensor)
+
+		if(sensor)
 			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-		else
-			sensor = false;
 
 		if(videoView != null)
 			if(suspending)
@@ -282,11 +258,11 @@ public class ControlActivity extends Activity implements SensorEventListener{
 			}
 	}
 
-	//onPause() unregister the accelerometer for stop listening the events
 	protected void onPause()
 	{
 		super.onPause();
 		videoView.stopPlayback();
+		sensorManager.unregisterListener(this);
 		suspending = true;
 	}
 
@@ -300,7 +276,7 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	{
 	}
 
-	//@Override
+	@Override
 	public void onSensorChanged(SensorEvent event)
 	{
 		float vx,vy,vz;

@@ -3,6 +3,7 @@ package teamkipez.jandroid.jandroidclient;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Message;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -54,9 +55,12 @@ public class StartActivity extends AppCompatActivity implements IConnectionState
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_settings)
+		{
 
-			Connections.getInstance().connect();
+			Message msg = Connections.getInstance().handler.obtainMessage();
+			msg.what = Connections.CONNECT;
+			Connections.getInstance().handler.sendMessage(msg);
 
             return true;
         }
