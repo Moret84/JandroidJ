@@ -31,36 +31,6 @@
 
 	</com.jmedeisis.bugstick.Joystick>
 
-	<TextView
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:textAppearance="?android:attr/textAppearanceMedium"
-		android:text="Medium Text"
-		android:id="@+id/powerTextView"
-		android:layout_alignTop="@+id/videoView"
-		android:layout_alignParentLeft="true"
-		android:layout_alignParentStart="true" />
-
-	<TextView
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:textAppearance="?android:attr/textAppearanceMedium"
-		android:text="Medium Text"
-		android:id="@+id/angleTextView"
-		android:layout_below="@+id/powerTextView"
-		android:layout_alignParentLeft="true"
-		android:layout_alignParentStart="true" />
-
-	<TextView
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:textAppearance="?android:attr/textAppearanceMedium"
-		android:text="Medium Text"
-		android:id="@+id/directionTextView"
-		android:layout_below="@+id/angleTextView"
-		android:layout_alignParentLeft="true"
-		android:layout_alignParentStart="true" />
-
 	<com.jmedeisis.bugstick.Joystick
 		android:id="@+id/joystickRight"
 		android:layout_width="120dp"
@@ -83,41 +53,11 @@
 		android:layout_alignLeft="@+id/button_sensor"
 		android:layout_alignStart="@+id/button_sensor" />
 
-	<TextView
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:textAppearance="?android:attr/textAppearanceMedium"
-		android:text="Accelerometre X"
-		android:id="@+id/x"
-		android:layout_alignParentTop="true"
-		android:layout_alignParentRight="true"
-		android:layout_alignParentEnd="true" />
-
-	<TextView
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:textAppearance="?android:attr/textAppearanceMedium"
-		android:text="Y"
-		android:id="@+id/y"
-		android:layout_below="@+id/x"
-		android:layout_alignParentRight="true"
-		android:layout_alignParentEnd="true" />
-
-	<TextView
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:textAppearance="?android:attr/textAppearanceMedium"
-		android:text="Z"
-		android:id="@+id/z"
-		android:layout_below="@+id/y"
-		android:layout_alignParentRight="true"
-		android:layout_alignParentEnd="true" />
-
 	<ImageButton
 		android:layout_width="75dip"
 		android:layout_height="75dip"
 		android:id="@+id/button_sensor"
-		android:background="@drawable/sensor"
+		android:background="@drawable/sensor_inactive"
 		android:layout_alignParentTop="true"
 		android:layout_centerHorizontal="true" />
 

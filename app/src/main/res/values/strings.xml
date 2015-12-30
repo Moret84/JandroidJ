@@ -11,7 +11,7 @@
     <string name="connection_success">Successfully connected to Jan DROID</string>
     <string name="connection_failed">An error occured during the connection to Jan DROID ...</string>
     <string name="wrong_string">What the fuck are u saying ?</string>
-    <string name="pause">Sensor : Yes</string>
-    <string name="resume">Sensor : No</string>
+    <string name="sensor_enabled">Sensor : Yes</string>
+    <string name="sensor_disabled">Sensor : No</string>
     <string name="action_connect">Connect</string>
 </resources>

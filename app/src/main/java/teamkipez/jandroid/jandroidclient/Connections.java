@@ -1,6 +1,5 @@
 package teamkipez.jandroid.jandroidclient;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -19,9 +18,10 @@ public class Connections extends Thread
 	public static final int SEND = 1;
 	public static final int STATE = 2;
 	public static final int CONNECT = 3;
-	public static String HEADER = "HEADER";
-	public static String X = "X";
-	public static String Y = "Y";
+	public static final String HEADER = "HEADER";
+	public static final String X = "X";
+	public static final String Y = "Y";
+	public static final byte PING = 'O';
 
 	public Handler handler;
 
@@ -45,7 +45,6 @@ public class Connections extends Thread
 	public void run()
 	{
 		Looper.prepare();
-		connect();
 
 		handler = new Handler()
 		{
@@ -67,6 +66,8 @@ public class Connections extends Thread
 				}
 			}
 		};
+
+		connect();
 
 		Looper.loop();
 	}
@@ -96,6 +97,14 @@ public class Connections extends Thread
 		catch(IOException e)
 		{
 			e.printStackTrace();
+			mUIHandler.post(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							mConnectionState.onConnectionFail();
+						}
+					});
 		}
 	}
 
@@ -103,33 +112,29 @@ public class Connections extends Thread
 	{
 		try
 		{
-			if(isConnected())
-				mConnectionState.alreadyConnected();
-			else
-			{
+			if(null == mJoystickSocket)
 				mJoystickSocket = new Socket(IP, PORT);
-				mDos = new DataOutputStream(mJoystickSocket.getOutputStream());
-				mUIHandler.post(new Runnable()
-				{
-					@Override
-					public void run()
+			mDos = new DataOutputStream(mJoystickSocket.getOutputStream());
+			mUIHandler.post(new Runnable()
 					{
-						mConnectionState.onConnectionSuccess();
-					}
-				});
-			}
+						@Override
+						public void run()
+						{
+							mConnectionState.onConnectionSuccess();
+						}
+					});
 		}
 		catch(IOException e)
 		{
 			e.printStackTrace();
 			mUIHandler.post(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					mConnectionState.onConnectionFail();
-				}
-			});
+					{
+						@Override
+						public void run()
+						{
+							mConnectionState.onConnectionFail();
+						}
+					});
 		}
 	}
 }

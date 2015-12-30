@@ -3,4 +3,4 @@ build.gradle.bak
 gradlew.bat
 .gradle
 .*.swp
-app/src/main/jni*
+*.iml

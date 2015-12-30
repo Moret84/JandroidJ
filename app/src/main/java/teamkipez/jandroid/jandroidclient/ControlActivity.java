@@ -1,63 +1,55 @@
 package teamkipez.jandroid.jandroidclient;
 
 import android.app.Activity;
-import android.content.ActivityNotFoundException;
 import android.content.Context;
-import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Message;
-import android.speech.RecognizerIntent;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageButton;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import com.jmedeisis.bugstick.Joystick;
-import com.jmedeisis.bugstick.JoystickListener;
-
 import com.camera.simplemjpeg.MjpegView;
 import com.camera.simplemjpeg.MjpegInputStream;
-
+import com.jmedeisis.bugstick.Joystick;
+import com.jmedeisis.bugstick.JoystickListener;
+import edu.cmu.pocketsphinx.Assets;
+import edu.cmu.pocketsphinx.Hypothesis;
+import edu.cmu.pocketsphinx.RecognitionListener;
+import edu.cmu.pocketsphinx.SpeechRecognizer;
+import edu.cmu.pocketsphinx.SpeechRecognizerSetup;
+import java.io.IOException;
+import java.io.File;
 import java.lang.Math;
-import java.util.ArrayList;
 
-public class ControlActivity extends Activity implements SensorEventListener{
+public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener
+{
+	private static final String SEARCH_TYPE = "pesance";
 
 	private MjpegView videoView = null;
 	private static final String URL = "http://192.168.12.1:8090/?action=stream";
 	//private static String URL = "http://mjpeg.sanford.io/count.mjpeg";
-	private boolean suspending = false;
-	public static byte MotorHeader = 'M';
-	public static byte CamHeader = 'C';
-
+	public static final byte MotorHeader = 'M';
+	public static final byte CamHeader = 'C';
 
 	private SensorManager sensorManager;
 	private Sensor accelerometer;
-	private Joystick leftJoystick;
-	private Joystick rightJoystick;
-	private ImageButton speakButton;
 	private ImageButton sensorButton;
 	boolean sensor = false;
 
-	//DEBUG
-	private TextView angleTextView;
-	private TextView powerTextView;
-	private TextView directionTextView;
-	private TextView x;
-	private TextView y;
-	private TextView z;
-	//!DEBUG
+	private Joystick leftJoystick;
+	private Joystick rightJoystick;
+
+	private ImageButton speakButton;
+	private SpeechRecognizer recognizer;
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	protected void onCreate(Bundle savedInstanceState)
+	{
 
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -69,53 +61,74 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		videoView = (MjpegView) findViewById(R.id.mv);
 		videoView.setDisplayMode(MjpegView.SIZE_FULLSCREEN);
 		new Thread(new Runnable()
-		{
-			public void run()
-			{
-				videoView.setSource(MjpegInputStream.read(URL));
-			}
-		}).start();
+				{
+					@Override
+					public void run()
+					{
+						videoView.setSource(MjpegInputStream.read(URL));
+					}
+				}).start();
 
 		//Speak Recognition
 		speakButton = (ImageButton) findViewById(R.id.button_speach);
-		speakButton.setOnClickListener(new View.OnClickListener() {
+		speakButton.setVisibility(View.INVISIBLE);
+		speakButton.setOnClickListener(new View.OnClickListener()
+				{
+
+					@Override
+					public void onClick(View v)
+					{
+						speechInput();
+					}
+				});
+
+		new AsyncTask<Void, Void, Exception>()
+		{
+			@Override
+			protected Exception doInBackground(Void... params)
+			{
+				try
+				{
+					Assets assets = new Assets(ControlActivity.this);
+					File assetDir = assets.syncAssets();
+					setupRecognizer(assetDir);
+				}
+				catch(IOException e)
+				{
+					return e;
+				}
+				return null;
+			}
 
 			@Override
-			public void onClick(View v) {
-				speechInput();
-			}
-		});
+			protected void onPostExecute(Exception result)
+			{
+				if(null != result)
+					result.printStackTrace();
 
-		//Debugs Joystick
-		angleTextView = (TextView) findViewById(R.id.angleTextView);
-		powerTextView = (TextView) findViewById(R.id.powerTextView);
-		directionTextView = (TextView) findViewById(R.id.directionTextView);
+				speakButton.setVisibility(View.VISIBLE);
+			}
+		}.execute();
 
 		//Joysticks
 		rightJoystick = (Joystick) findViewById(R.id.joystickRight);
 		leftJoystick = (Joystick) findViewById(R.id.joystick);
-
 		leftJoystick.setJoystickListener(initJoystick(MotorHeader));
 		rightJoystick.setJoystickListener(initJoystick(CamHeader));
 
-		//DEBUG ACCELEROMETERS
-		x = (TextView) findViewById(R.id.x);
-		y = (TextView) findViewById(R.id.y);
-		z = (TextView) findViewById(R.id.z);
-
+		//Sensor
 		sensorButton = (ImageButton) findViewById(R.id.button_sensor);
-
-		sensorButton.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v)
-			{
-
-				if(sensor)
-					enableSensor();
-				else
-					disableSensor();
-			}
-		});
+		sensorButton.setOnClickListener(new View.OnClickListener()
+				{
+					@Override
+					public void onClick(View v)
+					{
+						if(!sensor)
+							enableSensor();
+						else
+							disableSensor();
+					}
+				});
 
 		//Check Accelerometers
 		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -125,48 +138,32 @@ public class ControlActivity extends Activity implements SensorEventListener{
 			sensorButton.setVisibility(View.INVISIBLE);
 	}
 
-	private void enableSensor()
+	@Override
+	protected void onResume()
 	{
-		if(null != accelerometer)
-		{
-			sensor = true;
+		super.onResume();
+
+		if(sensor)
 			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-			Toast.makeText(getApplicationContext(), R.string.resume, Toast.LENGTH_SHORT).show();
-		}
 	}
 
-	private void disableSensor()
+	@Override
+	protected void onPause()
 	{
-		if(null != accelerometer)
-		{
-			sensor = false;
-			sensorManager.unregisterListener(this);
-			Toast.makeText(getApplicationContext(), R.string.resume, Toast.LENGTH_SHORT).show();
-		}
+		super.onPause();
+		videoView.stopPlayback();
+		sensorManager.unregisterListener(this);
 	}
 
 	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.menu_control, menu);
-		return true;
+	public void onDestroy()
+	{
+		super.onDestroy();
+		recognizer.cancel();
+		recognizer.shutdown();
 	}
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle action bar item clicks here. The action bar will
-		// automatically handle clicks on the Home/Up button, so long
-		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-
-		//noinspection SimplifiableIfStatement
-		if (id == R.id.action_settings) {
-			return true;
-		}
-
-		return super.onOptionsItemSelected(item);
-	}
-
+	//Joysticks
 	private JoystickListener initJoystick(final byte which)
 	{
 		return new JoystickListener()
@@ -183,18 +180,12 @@ public class ControlActivity extends Activity implements SensorEventListener{
 				byte x = (byte) (Math.cos(Math.toRadians(degrees)) * offset);
 				byte y = (byte) (Math.sin(Math.toRadians(degrees)) * offset);
 
-				angleTextView.setText("x " + String.valueOf(x));
-				powerTextView.setText("y " + String.valueOf(y));
-
 				sendJoystickInput(which, x, y);
 			}
 
 			@Override
 			public void onUp()
 			{
-				angleTextView.setText("x " + 0);
-				powerTextView.setText("y " + 0);
-
 				sendJoystickInput(which, (byte) 0, (byte) 0);
 			}
 		};
@@ -215,62 +206,104 @@ public class ControlActivity extends Activity implements SensorEventListener{
 		}
 	}
 
-	private void speechInput()
+	//Speech recognition
+	@Override
+	public void onPartialResult(Hypothesis hypothesis)
 	{
-		Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-		try
+		if(hypothesis == null)
+			return;
+		sendVoiceCommand(hypothesis.getHypstr());
+		//Toast.makeText(getApplicationContext(), hypothesis.getHypstr(), Toast.LENGTH_SHORT).show();
+	}
+
+	@Override
+	public void onResult(Hypothesis hypothesis)
+	{
+		if(hypothesis != null)
 		{
-			startActivityForResult(intent, 100);
-		} catch (ActivityNotFoundException a) {
-			Toast.makeText(getApplicationContext(), R.string.wrong_string, Toast.LENGTH_SHORT).show();
+		//	recognizer.stop();
+			//Toast.makeText(getApplicationContext(), hypothesis.getHypstr(), Toast.LENGTH_SHORT).show();
+			//Toast.makeText(getApplicationContext(), hypothesis.getHypstr(), Toast.LENGTH_SHORT).show();
 		}
 	}
 
 	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	public void onBeginningOfSpeech()
 	{
-		super.onActivityResult(requestCode, resultCode, data);
+	}
 
-		switch (requestCode)
+	@Override
+	public void onEndOfSpeech()
+	{
+	}
+
+	@Override
+	public void onError(Exception error)
+	{
+	}
+
+	@Override
+	public void onTimeout()
+	{
+		speakButton.setBackgroundResource(R.drawable.ico_mic);
+	}
+
+	private void setupRecognizer(File assetsDir) throws IOException
+	{
+		recognizer = SpeechRecognizerSetup.defaultSetup()
+			.setAcousticModel(new File(assetsDir, "fr-fr-ptm"))
+			.setDictionary(new File(assetsDir, "fr.dict"))
+			.setRawLogDir(assetsDir)
+			.setBoolean("-allphone_ci", true)
+			.getRecognizer();
+
+		recognizer.addListener(this);
+
+		// Create language model search
+		File directionGrammar = new File(assetsDir, "direction.gram");
+		recognizer.addGrammarSearch(SEARCH_TYPE, directionGrammar);
+	}
+
+	private void speechInput()
+	{
+		speakButton.setBackgroundResource(R.drawable.active_mic);
+		recognizer.stop();
+		recognizer.startListening(SEARCH_TYPE, 1000);
+	}
+
+	private void sendVoiceCommand(String commande)
+	{
+		byte x = 0, y = 0;
+
+		switch(commande)
 		{
-			case 100:
-				if (resultCode == RESULT_OK && null != data)
-				{
-					ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-					Toast.makeText(getApplicationContext(),result.get(0), Toast.LENGTH_SHORT).show();
-				}
+			case "avance":
+				x = 0;
+				y = 100;
+				break;
+			case "recule":
+				x = 0;
+				y = -100;
+				break;
+			case "stop":
+				x = 0;
+				y = 0;
+				break;
+			case "gauche":
+				x = -45;
+				y = 100;
+				break;
+			case "droite":
+				x = 45;
+				y = 100;
 				break;
 		}
+		sendJoystickInput(MotorHeader, x, y);
+		recognizer.stop();
+		speakButton.setBackgroundResource(R.drawable.ico_mic);
 	}
 
-	protected void onResume()
-	{
-		super.onResume();
-
-		if(sensor)
-			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-
-		if(videoView != null)
-			if(suspending)
-			{
-				videoView.startPlayback();
-				suspending = false;
-			}
-	}
-
-	protected void onPause()
-	{
-		super.onPause();
-		videoView.stopPlayback();
-		sensorManager.unregisterListener(this);
-		suspending = true;
-	}
-
-	public void onDestroy()
-	{
-		super.onDestroy();
-	}
-
+	//Sensor
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy)
 	{
@@ -279,13 +312,40 @@ public class ControlActivity extends Activity implements SensorEventListener{
 	@Override
 	public void onSensorChanged(SensorEvent event)
 	{
-		float vx,vy,vz;
-		vx = event.values[0];
-		vy = event.values[1];
-		vz = event.values[2];
+		byte y = (byte) (-1 * filterData(event.values[0])),x = filterData(event.values[1]);
+		sendJoystickInput(MotorHeader, x, y);
+	}
 
-		x.setText(Float.toString(vx));
-		y.setText(Float.toString(vy));
-		z.setText(Float.toString(vz));
+	private void enableSensor()
+	{
+		if(null != accelerometer)
+		{
+			sensor = true;
+			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+			sensorButton.setBackgroundResource(R.drawable.sensor);
+			leftJoystick.setJoystickListener(null);
+		}
+	}
+
+	private void disableSensor()
+	{
+		if(null != accelerometer)
+		{
+			sensor = false;
+			sensorManager.unregisterListener(this);
+			sensorButton.setBackgroundResource(R.drawable.sensor_inactive);
+			leftJoystick.setJoystickListener(initJoystick(MotorHeader));
+		}
+	}
+
+	private byte filterData(float input)
+	{
+		byte output = (byte) (input * 10.0f);
+
+		//Reduce sensitivity
+		if(Math.abs(output) <= 30)
+			output = 0;
+
+		return output;
 	}
 }
