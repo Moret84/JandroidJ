@@ -25,6 +25,7 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.jmedeisis:bugstick:0.2.2'
+	compile project(':libs:opencv')
     compile files('libs/pocketsphinx-android-5prealpha-nolib.jar')
 }
 

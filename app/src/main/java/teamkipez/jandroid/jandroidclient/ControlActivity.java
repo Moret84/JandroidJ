@@ -6,22 +6,27 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Message;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ImageButton;
+
 import com.camera.simplemjpeg.MjpegView;
 import com.camera.simplemjpeg.MjpegInputStream;
 import com.jmedeisis.bugstick.Joystick;
 import com.jmedeisis.bugstick.JoystickListener;
+
 import edu.cmu.pocketsphinx.Assets;
 import edu.cmu.pocketsphinx.Hypothesis;
 import edu.cmu.pocketsphinx.RecognitionListener;
 import edu.cmu.pocketsphinx.SpeechRecognizer;
 import edu.cmu.pocketsphinx.SpeechRecognizerSetup;
+
 import java.io.IOException;
 import java.io.File;
 import java.lang.Math;
@@ -36,21 +41,26 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	public static final byte MotorHeader = 'M';
 	public static final byte CamHeader = 'C';
 
+	//Sensor
 	private SensorManager sensorManager;
 	private Sensor accelerometer;
 	private ImageButton sensorButton;
 	boolean sensor = false;
 
+	//Joysticks
 	private Joystick leftJoystick;
 	private Joystick rightJoystick;
 
+	//Speak
 	private ImageButton speakButton;
 	private SpeechRecognizer recognizer;
+
+	//Tracking
+	private Button trackingButton;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
-
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -61,26 +71,26 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		videoView = (MjpegView) findViewById(R.id.mv);
 		videoView.setDisplayMode(MjpegView.SIZE_FULLSCREEN);
 		new Thread(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						videoView.setSource(MjpegInputStream.read(URL));
-					}
-				}).start();
+		{
+			@Override
+			public void run()
+			{
+				videoView.setSource(MjpegInputStream.read(URL));
+			}
+		}).start();
 
 		//Speak Recognition
 		speakButton = (ImageButton) findViewById(R.id.button_speach);
 		speakButton.setVisibility(View.INVISIBLE);
 		speakButton.setOnClickListener(new View.OnClickListener()
-				{
+		{
 
-					@Override
-					public void onClick(View v)
-					{
-						speechInput();
-					}
-				});
+			@Override
+			public void onClick(View v)
+			{
+				speechInput();
+			}
+		});
 
 		new AsyncTask<Void, Void, Exception>()
 		{
@@ -119,16 +129,16 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		//Sensor
 		sensorButton = (ImageButton) findViewById(R.id.button_sensor);
 		sensorButton.setOnClickListener(new View.OnClickListener()
-				{
-					@Override
-					public void onClick(View v)
-					{
-						if(!sensor)
-							enableSensor();
-						else
-							disableSensor();
-					}
-				});
+		{
+			@Override
+			public void onClick(View v)
+			{
+				if(!sensor)
+					enableSensor();
+				else
+					disableSensor();
+			}
+		});
 
 		//Check Accelerometers
 		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -136,6 +146,17 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 			accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		else
 			sensorButton.setVisibility(View.INVISIBLE);
+
+		trackingButton = (Button) findViewById(R.id.trackingButton);
+		trackingButton.setOnClickListener(new View.OnClickListener()
+		{
+			@Override
+			public void onClick(View v)
+			{
+				Intent intent = new Intent(ControlActivity.this, TrackingActivity.class);
+				startActivity(intent);
+			}
+		});
 	}
 
 	@Override
@@ -213,18 +234,11 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		if(hypothesis == null)
 			return;
 		sendVoiceCommand(hypothesis.getHypstr());
-		//Toast.makeText(getApplicationContext(), hypothesis.getHypstr(), Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
 	public void onResult(Hypothesis hypothesis)
 	{
-		if(hypothesis != null)
-		{
-		//	recognizer.stop();
-			//Toast.makeText(getApplicationContext(), hypothesis.getHypstr(), Toast.LENGTH_SHORT).show();
-			//Toast.makeText(getApplicationContext(), hypothesis.getHypstr(), Toast.LENGTH_SHORT).show();
-		}
 	}
 
 	@Override

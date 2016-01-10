@@ -38,11 +38,19 @@
 		android:background="@drawable/bg_base"
 		android:layout_alignParentBottom="true"
 		android:layout_alignParentEnd="true">
+
 		<Button
 			android:layout_width="@dimen/stick_size"
 			android:layout_height="@dimen/stick_size"
 			android:background="@drawable/bg_stick" />
 	</com.jmedeisis.bugstick.Joystick>
+
+		<Button
+			android:layout_height="wrap_content"
+			android:layout_width="wrap_content"
+			android:text="Tracking"
+			android:id="@+id/trackingButton"
+			/>
 
 	<ImageButton
 		android:layout_width="75dip"
