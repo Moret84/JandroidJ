@@ -58,8 +58,6 @@ public class Connections extends Thread
 					case(SEND):
 						sendJoystickInput(bundle.getByte(HEADER), bundle.getByte(X), bundle.getByte(Y));
 						break;
-					case(STATE):
-						break;
 					case(CONNECT):
 						connect();
 						break;
@@ -75,6 +73,21 @@ public class Connections extends Thread
 	public static Connections getInstance()
 	{
 		return instance;
+	}
+
+	public void addCommandToSendQueue(byte header, byte x, byte y)
+	{
+		if(handler != null)
+		{
+			Message msg = handler.obtainMessage();
+			msg.what = SEND;
+			Bundle bundle = new Bundle();
+			bundle.putByte(HEADER, header);
+			bundle.putByte(X, x);
+			bundle.putByte(Y, y);
+			msg.setData(bundle);
+			handler.sendMessage(msg);
+		}
 	}
 
 	private boolean isConnected()

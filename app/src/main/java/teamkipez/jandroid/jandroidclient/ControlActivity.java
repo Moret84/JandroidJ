@@ -2,6 +2,7 @@ package teamkipez.jandroid.jandroidclient;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -10,14 +11,17 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Message;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.SeekBar;
 
 import com.camera.simplemjpeg.MjpegView;
 import com.camera.simplemjpeg.MjpegInputStream;
+
 import com.jmedeisis.bugstick.Joystick;
 import com.jmedeisis.bugstick.JoystickListener;
 
@@ -31,9 +35,24 @@ import java.io.IOException;
 import java.io.File;
 import java.lang.Math;
 
-public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfInt4;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.videoio.VideoCapture;
+import org.opencv.imgproc.Imgproc;
+
+public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener, NewFrameListener
 {
 	private static final String SEARCH_TYPE = "pesance";
+	private static final String TAG = "ControlActivity";
 
 	private MjpegView videoView = null;
 	private static final String URL = "http://192.168.12.1:8090/?action=stream";
@@ -48,8 +67,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	boolean sensor = false;
 
 	//Joysticks
-	private Joystick leftJoystick;
-	private Joystick rightJoystick;
+	private Joystick leftJoystick, rightJoystick;
 
 	//Speak
 	private ImageButton speakButton;
@@ -57,6 +75,42 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 
 	//Tracking
 	private Button trackingButton;
+	private SeekBar hmin, hmax, smin, smax, vmin, vmax;
+	private Mat erodeElement, dilateElement, toModify, ranged, tmp;
+	private Rect bounding;
+	private int width = 384, height = 216;
+	private double area = 0, refArea = 0, x, y, MOVE;
+
+	boolean objectFound = false;
+
+	private int H_MIN = 0, S_MIN = 0, V_MIN = 0;
+	private int H_MAX = 256, S_MAX = 256, V_MAX = 256;
+
+	private int ID_H_MIN, ID_H_MAX, ID_S_MIN, ID_S_MAX, ID_V_MIN, ID_V_MAX;
+
+	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
+	{
+		@Override
+		public void onManagerConnected(int status)
+		{
+			switch (status)
+			{
+				case LoaderCallbackInterface.SUCCESS:
+					{
+						Log.i(TAG, "OpenCV loaded successfully");
+						erodeElement = new Mat();
+						dilateElement = new Mat();
+						toModify = new Mat();
+						ranged = new Mat();
+						tmp = new Mat();
+						break;
+					}
+				default:
+					super.onManagerConnected(status);
+					break;
+			}
+		}
+	};
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -79,6 +133,19 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 			}
 		}).start();
 
+		//Tracking
+		videoView.setNewFrameListener(this);
+		trackingButton = (Button) findViewById(R.id.trackingButton);
+		trackingButton.setOnClickListener(new View.OnClickListener()
+		{
+			@Override
+			public void onClick(View v)
+			{
+				Intent intent = new Intent(ControlActivity.this, TrackingActivity.class);
+				startActivity(intent);
+			}
+		});
+
 		//Speak Recognition
 		speakButton = (ImageButton) findViewById(R.id.button_speach);
 		speakButton.setVisibility(View.INVISIBLE);
@@ -92,6 +159,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 			}
 		});
 
+		//Synchronize Assets for pocketsphinx
 		new AsyncTask<Void, Void, Exception>()
 		{
 			@Override
@@ -146,23 +214,23 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 			accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		else
 			sensorButton.setVisibility(View.INVISIBLE);
-
-		trackingButton = (Button) findViewById(R.id.trackingButton);
-		trackingButton.setOnClickListener(new View.OnClickListener()
-		{
-			@Override
-			public void onClick(View v)
-			{
-				Intent intent = new Intent(ControlActivity.this, TrackingActivity.class);
-				startActivity(intent);
-			}
-		});
 	}
 
 	@Override
 	protected void onResume()
 	{
 		super.onResume();
+
+		if (!OpenCVLoader.initDebug())
+		{
+			Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+			OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
+		}
+		else
+		{
+			Log.d(TAG, "OpenCV library found inside package. Using it!");
+			mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+		}
 
 		if(sensor)
 			sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
@@ -184,6 +252,13 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		recognizer.shutdown();
 	}
 
+	@Override
+	public void onFrame(Bitmap frame)
+	{
+		if(frame != null)
+			Log.d("FRAME", "YOUPI J'AI LA FRAME !");
+	}
+
 	//Joysticks
 	private JoystickListener initJoystick(final byte which)
 	{
@@ -201,30 +276,15 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 				byte x = (byte) (Math.cos(Math.toRadians(degrees)) * offset);
 				byte y = (byte) (Math.sin(Math.toRadians(degrees)) * offset);
 
-				sendJoystickInput(which, x, y);
+				Connections.getInstance().addCommandToSendQueue(which, x, y);
 			}
 
 			@Override
 			public void onUp()
 			{
-				sendJoystickInput(which, (byte) 0, (byte) 0);
+				Connections.getInstance().addCommandToSendQueue(which, (byte) 0, (byte) 0);
 			}
 		};
-	}
-
-	private void sendJoystickInput(final byte header, final byte x, final byte y)
-	{
-		if(Connections.getInstance().handler != null)
-		{
-			Message msg = Connections.getInstance().handler.obtainMessage();
-			msg.what = Connections.SEND;
-			Bundle bundle = new Bundle();
-			bundle.putByte(Connections.HEADER, header);
-			bundle.putByte(Connections.X, x);
-			bundle.putByte(Connections.Y, y);
-			msg.setData(bundle);
-			Connections.getInstance().handler.sendMessage(msg);
-		}
 	}
 
 	//Speech recognition
@@ -312,7 +372,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 				y = 100;
 				break;
 		}
-		sendJoystickInput(MotorHeader, x, y);
+		Connections.getInstance().addCommandToSendQueue(MotorHeader, x, y);
 		recognizer.stop();
 		speakButton.setBackgroundResource(R.drawable.ico_mic);
 	}
@@ -327,7 +387,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	public void onSensorChanged(SensorEvent event)
 	{
 		byte y = (byte) (-1 * filterData(event.values[0])),x = filterData(event.values[1]);
-		sendJoystickInput(MotorHeader, x, y);
+		Connections.getInstance().addCommandToSendQueue(MotorHeader, x, y);
 	}
 
 	private void enableSensor()

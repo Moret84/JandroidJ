@@ -1,7 +1,5 @@
 package com.camera.simplemjpeg;
 
-import java.io.IOException;
-
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -15,6 +13,10 @@ import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.io.IOException;
+
+import teamkipez.jandroid.jandroidclient.NewFrameListener;
+
 public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
     public final static int POSITION_UPPER_LEFT  = 9;
     public final static int POSITION_UPPER_RIGHT = 3;
@@ -25,6 +27,7 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
     public final static int SIZE_BEST_FIT   = 4;
     public final static int SIZE_FULLSCREEN = 8;
 
+	private NewFrameListener mNewFrameListener;
     private MjpegViewThread thread;
     private MjpegInputStream mIn = null;
     private boolean showFps = false;
@@ -108,6 +111,7 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
                         synchronized (mSurfaceHolder) {
                             try {
                                 bm = mIn.readMjpegFrame();
+								mNewFrameListener.onFrame(bm);
                                 destRect = destRect(bm.getWidth(),bm.getHeight());
                                 c.drawColor(Color.BLACK);
                                 c.drawBitmap(bm, null, destRect, p);
@@ -209,4 +213,9 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
     public void setDisplayMode(int s) {
         displayMode = s;
     }
+
+	public void setNewFrameListener(NewFrameListener newFrameListener)
+	{
+		mNewFrameListener = newFrameListener;
+	}
 }
