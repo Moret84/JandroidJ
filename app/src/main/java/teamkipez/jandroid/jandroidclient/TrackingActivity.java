@@ -16,8 +16,9 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-import android.app.Activity;
 import android.os.Bundle;
+import android.os.Message;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.WindowManager;
@@ -26,7 +27,7 @@ import android.widget.SeekBar;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TrackingActivity extends Activity implements CvCameraViewListener2, SeekBar.OnSeekBarChangeListener
+public class TrackingActivity extends AppCompatActivity implements CvCameraViewListener2, SeekBar.OnSeekBarChangeListener
 {
     private static final String TAG = "OCVSample::Activity";
 
@@ -50,7 +51,6 @@ public class TrackingActivity extends Activity implements CvCameraViewListener2,
     private int height = 216;
     private double area = 0;
     private double refArea = 0;
-
 
     private double MOVE;
 
@@ -114,7 +114,7 @@ public class TrackingActivity extends Activity implements CvCameraViewListener2,
         }
 
         @Override
-        public void onPause ()
+        public void onPause()
         {
             super.onPause();
             if (mOpenCvCameraView != null)
@@ -122,20 +122,23 @@ public class TrackingActivity extends Activity implements CvCameraViewListener2,
         }
 
         @Override
-        public void onResume ()
+        public void onResume()
         {
             super.onResume();
-            if (!OpenCVLoader.initDebug()) {
+            if (!OpenCVLoader.initDebug())
+			{
                 Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
                 OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
-            } else {
+            }
+			else
+			{
                 Log.d(TAG, "OpenCV library found inside package. Using it!");
                 mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
             }
         }
 
-    public void setupSeekBars(){
-
+    public void setupSeekBars()
+	{
         hmin = (SeekBar) findViewById(R.id.seekBar);
         hmax = (SeekBar) findViewById(R.id.seekBar2);
         smin = (SeekBar) findViewById(R.id.seekBar3);
@@ -236,11 +239,26 @@ public class TrackingActivity extends Activity implements CvCameraViewListener2,
         else
             Imgproc.putText(ranged, "X", new Point(x, y), 1, 1, new Scalar(0, 0, 255), 2);
 
-        MOVE =(x - (toModify.size().width)/2) * 0.3;
+        MOVE =(x - (toModify.size().width)/2) * 0.5;
         Log.i(TAG, "Move X : "+MOVE);
-
+		sendJoystickInput(ControlActivity.MotorHeader, (byte) MOVE, (byte) 50 );
         return ranged;
     }
+
+	private void sendJoystickInput(final byte header, final byte x, final byte y)
+	{
+		if(Connections.getInstance().handler != null)
+		{
+			Message msg = Connections.getInstance().handler.obtainMessage();
+			msg.what = Connections.SEND;
+			Bundle bundle = new Bundle();
+			bundle.putByte(Connections.HEADER, header);
+			bundle.putByte(Connections.X, x);
+			bundle.putByte(Connections.Y, y);
+			msg.setData(bundle);
+			Connections.getInstance().handler.sendMessage(msg);
+		}
+	}
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progresValue, boolean fromUser)

@@ -20,6 +20,10 @@ package="teamkipez.jandroid.jandroidclient" >
         android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
         android:screenOrientation="landscape">
     </activity>
+    <activity
+        android:name=".TrackingActivity"
+        android:screenOrientation="landscape">
+    </activity>
 </application>
 
 <uses-permission android:name="android.permission.INTERNET" />
