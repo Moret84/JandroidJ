@@ -76,7 +76,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 
 	//Tracking
 	private boolean trackingIsOn = false;
-	private Button trackingButton;
+	private ImageButton trackingButton, trackingSettingsButton;
 	private SeekBar hmin, hmax, smin, smax, vmin, vmax;
 
 	private Mat erodeElement, dilateElement, toModify, ranged, tmp;
@@ -138,13 +138,22 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 
 		//Tracking
 		videoView.setNewFrameListener(this);
-		trackingButton = (Button) findViewById(R.id.trackingButton);
+		trackingButton = (ImageButton) findViewById(R.id.trackingButton);
 		trackingButton.setOnClickListener(new View.OnClickListener()
 		{
 			@Override
 			public void onClick(View v)
 			{
 				toggleTracking();
+			}
+		});
+
+		trackingSettingsButton = (ImageButton) findViewById(R.id.trackingSettingsButton);
+		trackingSettingsButton.setOnClickListener(new View.OnClickListener()
+		{
+			@Override
+			public void onClick(View v)
+			{
 			}
 		});
 
@@ -262,12 +271,16 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		{
 			sensorButton.setVisibility(View.INVISIBLE);
 			speakButton.setVisibility(View.INVISIBLE);
+			trackingButton.setBackgroundResource(R.drawable.tracking_black);
+			trackingSettingsButton.setVisibility(View.VISIBLE);
 			trackingIsOn = true;
 		}
 		else
 		{
 			sensorButton.setVisibility(View.VISIBLE);
 			speakButton.setVisibility(View.VISIBLE);
+			trackingButton.setBackgroundResource(R.drawable.tracking_white);
+			trackingSettingsButton.setVisibility(View.INVISIBLE);
 			trackingIsOn = false;
 		}
 	}
@@ -337,9 +350,6 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	@Override
 	public Bitmap onFrame(Bitmap frame)
 	{
-		if(frame != null)
-			Log.d("FRAME", "YOUPI J'AI LA FRAME !");
-
 		return trackingIsOn? processFrame(frame): frame;
 	}
 

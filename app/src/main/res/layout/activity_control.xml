@@ -45,12 +45,12 @@
 			android:background="@drawable/bg_stick" />
 	</com.jmedeisis.bugstick.Joystick>
 
-		<Button
-			android:layout_height="wrap_content"
-			android:layout_width="wrap_content"
-			android:text="Tracking"
-			android:id="@+id/trackingButton"
-			/>
+	<ImageButton
+		android:layout_height="wrap_content"
+		android:layout_width="wrap_content"
+		android:background="@drawable/tracking_white"
+		android:id="@+id/trackingButton"
+		/>
 
 	<ImageButton
 		android:layout_width="75dip"
@@ -68,5 +68,14 @@
 		android:background="@drawable/sensor_inactive"
 		android:layout_alignParentTop="true"
 		android:layout_centerHorizontal="true" />
+
+	<ImageButton
+		android:layout_height="wrap_content"
+		android:layout_width="wrap_content"
+		android:background="@drawable/settings"
+		android:id="@+id/trackingSettingsButton"
+		android:layout_alignParentTop="true"
+		android:layout_alignParentEnd="true"
+		android:visibility="invisible"/>
 
 </RelativeLayout>
