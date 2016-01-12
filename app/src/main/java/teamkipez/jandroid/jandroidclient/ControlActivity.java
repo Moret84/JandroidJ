@@ -285,11 +285,25 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		}
 	}
 
+	private Mat bitmapToMat(Bitmap input)
+	{
+		input = input.copy(Bitmap.Config.ARGB_8888, true);
+		Mat output = new Mat();
+		Utils.bitmapToMat(input, output);
+		return output;
+	}
+
+	private Bitmap matToBitmap(Mat input)
+	{
+		Bitmap output = Bitmap.createBitmap(input.cols(), input.rows(), Bitmap.Config.ARGB_8888);;
+		Utils.matToBitmap(input, output);
+		return output;
+	}
+
 	private Bitmap processFrame(Bitmap frame)
 	{
 		//Convert Bitmap to OpenCV Mat
-		Bitmap bmp32 = frame.copy(Bitmap.Config.ARGB_8888, true);
-		Utils.bitmapToMat(bmp32, toModify);
+		toModify = bitmapToMat(frame);
 
 		//Processing
 		Imgproc.cvtColor(toModify, toModify, Imgproc.COLOR_BGR2HSV);
@@ -339,12 +353,8 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 
 		MOVE =(x - (toModify.size().width)/2) * 0.5;
 
-		//Convert back to Bitmap
-		frame = Bitmap.createBitmap(ranged.cols(), ranged.rows(), Bitmap.Config.ARGB_8888);;
-		Utils.matToBitmap(ranged, frame);
-
-		return frame;
-
+		//Convert back to Bitmap and return
+		return matToBitmap(ranged);
 	}
 
 	@Override
