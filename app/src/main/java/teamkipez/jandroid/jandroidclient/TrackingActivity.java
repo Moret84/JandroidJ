@@ -298,7 +298,6 @@ public class TrackingActivity extends AppCompatActivity implements CvCameraViewL
 	@Override
 	public void onStopTrackingTouch(SeekBar seekBar)
 	{
-
 		//textView.setText("Covered: " + progress + "/" + seekBar.getMax());
 		//Toast.makeText(getApplicationContext(), "Stopped tracking seekbar", Toast.LENGTH_SHORT).show();
 	}

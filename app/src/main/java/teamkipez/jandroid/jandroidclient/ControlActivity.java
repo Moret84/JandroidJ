@@ -50,7 +50,8 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener, NewFrameListener
+public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener, NewFrameListener, SeekBar.OnSeekBarChangeListener
+
 {
 	private static final String SEARCH_TYPE = "pesance";
 	private static final String TAG = "ControlActivity";
@@ -283,6 +284,80 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 			trackingSettingsButton.setVisibility(View.INVISIBLE);
 			trackingIsOn = false;
 		}
+	}
+
+	@Override
+	public void onProgressChanged(SeekBar seekBar, int progresValue, boolean fromUser)
+	{
+		int id = seekBar.getId();
+
+		if(id == ID_H_MAX)
+			H_MAX = progresValue;
+		else if(id == ID_H_MIN)
+			H_MIN = progresValue;
+		else if(id == ID_S_MAX)
+			S_MAX = progresValue;
+		else if(id == ID_S_MIN)
+			S_MIN = progresValue;
+		else if (id == ID_V_MAX)
+			V_MAX = progresValue;
+		else if(id == ID_V_MIN)
+			V_MIN = progresValue;
+	}
+
+	@Override
+	public void onStartTrackingTouch(SeekBar seekBar)
+	{
+	}
+
+	@Override
+	public void onStopTrackingTouch(SeekBar seekBar)
+	{
+	}
+
+	private void setupSeekBars()
+	{
+		hmin = (SeekBar) findViewById(R.id.seekBar);
+		hmax = (SeekBar) findViewById(R.id.seekBar2);
+		smin = (SeekBar) findViewById(R.id.seekBar3);
+		smax = (SeekBar) findViewById(R.id.seekBar4);
+		vmin = (SeekBar) findViewById(R.id.seekBar5);
+		vmax = (SeekBar) findViewById(R.id.seekBar6);
+
+		hmin = (SeekBar) findViewById(R.id.seekBar);
+		hmax = (SeekBar) findViewById(R.id.seekBar2);
+		smin = (SeekBar) findViewById(R.id.seekBar3);
+		smax = (SeekBar) findViewById(R.id.seekBar4);
+		vmin = (SeekBar) findViewById(R.id.seekBar5);
+		vmax = (SeekBar) findViewById(R.id.seekBar6);
+
+		hmin.setOnSeekBarChangeListener(this);
+		hmax.setOnSeekBarChangeListener(this);
+		smax.setOnSeekBarChangeListener(this);
+		smin.setOnSeekBarChangeListener(this);
+		vmax.setOnSeekBarChangeListener(this);
+		vmin.setOnSeekBarChangeListener(this);
+
+		hmin.setMax(256);
+		hmax.setMax(256);
+		smin.setMax(256);
+		smax.setMax(256);
+		vmin.setMax(256);
+		vmax.setMax(256);
+
+		hmin.setProgress(H_MIN);
+		hmax.setProgress(H_MAX);
+		smax.setProgress(S_MAX);
+		smin.setProgress(S_MIN);
+		vmin.setProgress(V_MIN);
+		vmax.setProgress(V_MAX);
+
+		ID_H_MAX = hmax.getId();
+		ID_H_MIN = hmin.getId();
+		ID_S_MAX = smax.getId();
+		ID_S_MIN = smin.getId();
+		ID_V_MAX = vmax.getId();
+		ID_V_MIN = vmin.getId();
 	}
 
 	private Mat bitmapToMat(Bitmap input)
