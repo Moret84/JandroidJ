@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: /home/aurelien/Desktop/JandroidJ/libs/opencv/src/org/opencv/engine/OpenCVEngineInterface.aidl
+ * Original file: /home/aurelien/Desktop/CERI/JandroidJ/libs/opencv/src/org/opencv/engine/OpenCVEngineInterface.aidl
  */
 package org.opencv.engine;
 /**

@@ -4,5 +4,5 @@ import android.graphics.Bitmap;
 
 public interface NewFrameListener
 {
-    public void onFrame(Bitmap frame);
+    public Bitmap onFrame(Bitmap frame);
 }

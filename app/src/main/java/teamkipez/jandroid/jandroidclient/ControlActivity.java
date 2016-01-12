@@ -10,7 +10,6 @@ import android.hardware.SensorManager;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -34,10 +33,13 @@ import edu.cmu.pocketsphinx.SpeechRecognizerSetup;
 import java.io.IOException;
 import java.io.File;
 import java.lang.Math;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfInt4;
@@ -46,7 +48,6 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.videoio.VideoCapture;
 import org.opencv.imgproc.Imgproc;
 
 public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener, NewFrameListener
@@ -74,8 +75,10 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	private SpeechRecognizer recognizer;
 
 	//Tracking
+	private boolean trackingIsOn = false;
 	private Button trackingButton;
 	private SeekBar hmin, hmax, smin, smax, vmin, vmax;
+
 	private Mat erodeElement, dilateElement, toModify, ranged, tmp;
 	private Rect bounding;
 	private int width = 384, height = 216;
@@ -141,8 +144,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 			@Override
 			public void onClick(View v)
 			{
-				Intent intent = new Intent(ControlActivity.this, TrackingActivity.class);
-				startActivity(intent);
+				toggleTracking();
 			}
 		});
 
@@ -252,11 +254,93 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		recognizer.shutdown();
 	}
 
+	//Tracking stuff
+
+	private void toggleTracking()
+	{
+		if(!trackingIsOn)
+		{
+			sensorButton.setVisibility(View.INVISIBLE);
+			speakButton.setVisibility(View.INVISIBLE);
+			trackingIsOn = true;
+		}
+		else
+		{
+			sensorButton.setVisibility(View.VISIBLE);
+			speakButton.setVisibility(View.VISIBLE);
+			trackingIsOn = false;
+		}
+	}
+
+	private Bitmap processFrame(Bitmap frame)
+	{
+		//Convert Bitmap to OpenCV Mat
+		Bitmap bmp32 = frame.copy(Bitmap.Config.ARGB_8888, true);
+		Utils.bitmapToMat(bmp32, toModify);
+
+		//Processing
+		Imgproc.cvtColor(toModify, toModify, Imgproc.COLOR_BGR2HSV);
+
+		Core.inRange(toModify, new Scalar(H_MIN, S_MIN, V_MIN), new Scalar(H_MAX, S_MAX, V_MAX), ranged);
+
+		erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+		dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(8, 8));
+
+		Imgproc.erode(ranged, ranged, erodeElement);
+		Imgproc.erode(ranged, ranged, erodeElement);
+
+		Imgproc.dilate(ranged, ranged, dilateElement);
+		Imgproc.dilate(ranged, ranged, dilateElement);
+
+		ranged.copyTo(tmp);
+
+		List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+		MatOfInt4 hierarchy = new MatOfInt4();
+		Imgproc.findContours(tmp, contours, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_NONE);
+
+		double width = hierarchy.size().width;
+		refArea = 0;
+		area = 0;
+
+		if (width > 0 && width < 15)
+		{
+			for (int index = 0; index < contours.size(); index++)
+			{
+				bounding = Imgproc.boundingRect(contours.get(index));
+				area = bounding.area();
+				if (area > refArea && area > 100) {
+
+					x = bounding.x + (bounding.width /2);
+					y = bounding.y + (bounding.height /2);
+					objectFound = true;
+					refArea = area;
+				} else
+					objectFound = false;
+			}
+		}
+
+		if (!objectFound)
+			Imgproc.putText(ranged, "TOO MUCH NOISE", new Point(0, 50), 1, 1, new Scalar(0, 0, 255), 2);
+		else
+			Imgproc.putText(ranged, "X", new Point(x, y), 1, 1, new Scalar(0, 0, 255), 2);
+
+		MOVE =(x - (toModify.size().width)/2) * 0.5;
+
+		//Convert back to Bitmap
+		frame = Bitmap.createBitmap(ranged.cols(), ranged.rows(), Bitmap.Config.ARGB_8888);;
+		Utils.matToBitmap(ranged, frame);
+
+		return frame;
+
+	}
+
 	@Override
-	public void onFrame(Bitmap frame)
+	public Bitmap onFrame(Bitmap frame)
 	{
 		if(frame != null)
 			Log.d("FRAME", "YOUPI J'AI LA FRAME !");
+
+		return trackingIsOn? processFrame(frame): frame;
 	}
 
 	//Joysticks
