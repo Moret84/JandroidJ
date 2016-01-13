@@ -27,7 +27,7 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
     public final static int SIZE_BEST_FIT   = 4;
     public final static int SIZE_FULLSCREEN = 8;
 
-	private NewFrameListener mNewFrameListener;
+	private NewFrameListener mNewFrameListener = null;
     private MjpegViewThread thread;
     private MjpegInputStream mIn = null;
     private boolean showFps = false;
@@ -110,7 +110,7 @@ public class MjpegView extends SurfaceView implements SurfaceHolder.Callback {
                         c = mSurfaceHolder.lockCanvas();
                         synchronized (mSurfaceHolder) {
                             try {
-                                bm = mNewFrameListener.onFrame(mIn.readMjpegFrame());
+								bm = (mNewFrameListener != null)? mNewFrameListener.onFrame(mIn.readMjpegFrame()) : mIn.readMjpegFrame();
                                 destRect = destRect(bm.getWidth(),bm.getHeight());
                                 c.drawColor(Color.BLACK);
                                 c.drawBitmap(bm, null, destRect, p);

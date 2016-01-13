@@ -7,15 +7,16 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 
 import com.camera.simplemjpeg.MjpegView;
@@ -50,8 +51,7 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener, NewFrameListener, SeekBar.OnSeekBarChangeListener
-
+public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener, NewFrameListener
 {
 	private static final String SEARCH_TYPE = "pesance";
 	private static final String TAG = "ControlActivity";
@@ -76,21 +76,17 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	private SpeechRecognizer recognizer;
 
 	//Tracking
-	private boolean trackingIsOn = false;
+	private final int TRACKING_SETTINGS_NB = 6, MAX_SETTING_VALUE = 256;
+	private boolean trackingIsOn = false, visibleSeekBars = false;
+	private LinearLayout seekBarsLayout;
 	private ImageButton trackingButton, trackingSettingsButton;
-	private SeekBar hmin, hmax, smin, smax, vmin, vmax;
+	private SparseArray<SeekBar> seekBarsMap;
 
 	private Mat erodeElement, dilateElement, toModify, ranged, tmp;
 	private Rect bounding;
 	private int width = 384, height = 216;
-	private double area = 0, refArea = 0, x, y, MOVE;
-
-	boolean objectFound = false;
-
-	private int H_MIN = 0, S_MIN = 0, V_MIN = 0;
-	private int H_MAX = 256, S_MAX = 256, V_MAX = 256;
-
-	private int ID_H_MIN, ID_H_MAX, ID_S_MIN, ID_S_MAX, ID_V_MIN, ID_V_MAX;
+	private double area = 0, refArea = 0, x, y, MOVEX, MOVEY;
+	private boolean objectFound = false;
 
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
 	{
@@ -155,15 +151,18 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 			@Override
 			public void onClick(View v)
 			{
+				toggleTrackingSettings();
 			}
 		});
+
+		seekBarsLayout = (LinearLayout) findViewById(R.id.seekBarsLayout);
+		setupSeekBars();
 
 		//Speak Recognition
 		speakButton = (ImageButton) findViewById(R.id.button_speach);
 		speakButton.setVisibility(View.INVISIBLE);
 		speakButton.setOnClickListener(new View.OnClickListener()
 		{
-
 			@Override
 			public void onClick(View v)
 			{
@@ -265,10 +264,43 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	}
 
 	//Tracking stuff
+	private void toggleTrackingSettings()
+	{
+		if(trackingIsOn)
+		{
+			if(visibleSeekBars)
+			{
+				seekBarsLayout.setVisibility(View.INVISIBLE);
+				visibleSeekBars = false;
+			}
+			else
+			{
+				seekBarsLayout.setVisibility(View.VISIBLE);
+				visibleSeekBars = true;
+			}
+		}
+	}
+
+	private void resizeAndMoveVideoView()
+	{
+		videoView.getLayoutParams().width = 320;
+		videoView.getLayoutParams().height = 240;
+		((RelativeLayout.LayoutParams) videoView.getLayoutParams()).addRule(RelativeLayout.ALIGN_PARENT_BOTTOM) ;
+	}
 
 	private void toggleTracking()
 	{
-		if(!trackingIsOn)
+		if(trackingIsOn)
+		{
+			if(visibleSeekBars)
+				toggleTrackingSettings();
+			sensorButton.setVisibility(View.VISIBLE);
+			speakButton.setVisibility(View.VISIBLE);
+			trackingButton.setBackgroundResource(R.drawable.tracking_white);
+			trackingSettingsButton.setVisibility(View.INVISIBLE);
+			trackingIsOn = false;
+		}
+		else
 		{
 			sensorButton.setVisibility(View.INVISIBLE);
 			speakButton.setVisibility(View.INVISIBLE);
@@ -276,88 +308,25 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 			trackingSettingsButton.setVisibility(View.VISIBLE);
 			trackingIsOn = true;
 		}
-		else
-		{
-			sensorButton.setVisibility(View.VISIBLE);
-			speakButton.setVisibility(View.VISIBLE);
-			trackingButton.setBackgroundResource(R.drawable.tracking_white);
-			trackingSettingsButton.setVisibility(View.INVISIBLE);
-			trackingIsOn = false;
-		}
-	}
-
-	@Override
-	public void onProgressChanged(SeekBar seekBar, int progresValue, boolean fromUser)
-	{
-		int id = seekBar.getId();
-
-		if(id == ID_H_MAX)
-			H_MAX = progresValue;
-		else if(id == ID_H_MIN)
-			H_MIN = progresValue;
-		else if(id == ID_S_MAX)
-			S_MAX = progresValue;
-		else if(id == ID_S_MIN)
-			S_MIN = progresValue;
-		else if (id == ID_V_MAX)
-			V_MAX = progresValue;
-		else if(id == ID_V_MIN)
-			V_MIN = progresValue;
-	}
-
-	@Override
-	public void onStartTrackingTouch(SeekBar seekBar)
-	{
-	}
-
-	@Override
-	public void onStopTrackingTouch(SeekBar seekBar)
-	{
 	}
 
 	private void setupSeekBars()
 	{
-		hmin = (SeekBar) findViewById(R.id.seekBar);
-		hmax = (SeekBar) findViewById(R.id.seekBar2);
-		smin = (SeekBar) findViewById(R.id.seekBar3);
-		smax = (SeekBar) findViewById(R.id.seekBar4);
-		vmin = (SeekBar) findViewById(R.id.seekBar5);
-		vmax = (SeekBar) findViewById(R.id.seekBar6);
+		seekBarsMap = new SparseArray<SeekBar>(TRACKING_SETTINGS_NB);
 
-		hmin = (SeekBar) findViewById(R.id.seekBar);
-		hmax = (SeekBar) findViewById(R.id.seekBar2);
-		smin = (SeekBar) findViewById(R.id.seekBar3);
-		smax = (SeekBar) findViewById(R.id.seekBar4);
-		vmin = (SeekBar) findViewById(R.id.seekBar5);
-		vmax = (SeekBar) findViewById(R.id.seekBar6);
+		seekBarsMap.append(R.id.seekBarHmin, (SeekBar) findViewById(R.id.seekBarHmin));
+		seekBarsMap.append(R.id.seekBarHmax, (SeekBar) findViewById(R.id.seekBarHmax));
+		seekBarsMap.append(R.id.seekBarSmin, (SeekBar) findViewById(R.id.seekBarSmin));
+		seekBarsMap.append(R.id.seekBarSmax, (SeekBar) findViewById(R.id.seekBarSmax));
+		seekBarsMap.append(R.id.seekBarVmin, (SeekBar) findViewById(R.id.seekBarVmin));
+		seekBarsMap.append(R.id.seekBarVmax, (SeekBar) findViewById(R.id.seekBarVmax));
 
-		hmin.setOnSeekBarChangeListener(this);
-		hmax.setOnSeekBarChangeListener(this);
-		smax.setOnSeekBarChangeListener(this);
-		smin.setOnSeekBarChangeListener(this);
-		vmax.setOnSeekBarChangeListener(this);
-		vmin.setOnSeekBarChangeListener(this);
-
-		hmin.setMax(256);
-		hmax.setMax(256);
-		smin.setMax(256);
-		smax.setMax(256);
-		vmin.setMax(256);
-		vmax.setMax(256);
-
-		hmin.setProgress(H_MIN);
-		hmax.setProgress(H_MAX);
-		smax.setProgress(S_MAX);
-		smin.setProgress(S_MIN);
-		vmin.setProgress(V_MIN);
-		vmax.setProgress(V_MAX);
-
-		ID_H_MAX = hmax.getId();
-		ID_H_MIN = hmin.getId();
-		ID_S_MAX = smax.getId();
-		ID_S_MIN = smin.getId();
-		ID_V_MAX = vmax.getId();
-		ID_V_MIN = vmin.getId();
+		for(int i = 0; i < seekBarsMap.size(); i++)
+		{
+			SeekBar b = seekBarsMap.valueAt(i);
+			b.setMax(MAX_SETTING_VALUE);
+			b.setProgress((i % 2 == 0) ? 0 : MAX_SETTING_VALUE);
+		}
 	}
 
 	private Mat bitmapToMat(Bitmap input)
@@ -383,7 +352,14 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		//Processing
 		Imgproc.cvtColor(toModify, toModify, Imgproc.COLOR_BGR2HSV);
 
-		Core.inRange(toModify, new Scalar(H_MIN, S_MIN, V_MIN), new Scalar(H_MAX, S_MAX, V_MAX), ranged);
+		Core.inRange(toModify,
+				new Scalar(seekBarsMap.get(R.id.seekBarHmin).getProgress(),
+					seekBarsMap.get(R.id.seekBarSmin).getProgress(),
+					seekBarsMap.get(R.id.seekBarVmin).getProgress()),
+				new Scalar(seekBarsMap.get(R.id.seekBarHmax).getProgress(),
+					seekBarsMap.get(R.id.seekBarSmax).getProgress(),
+					seekBarsMap.get(R.id.seekBarVmax).getProgress())
+				, ranged);
 
 		erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
 		dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(8, 8));
@@ -422,11 +398,19 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		}
 
 		if (!objectFound)
+		{
 			Imgproc.putText(ranged, "TOO MUCH NOISE", new Point(0, 50), 1, 1, new Scalar(0, 0, 255), 2);
+			MOVEX = (x - (toModify.size().width)/2) * 0.5;
+			MOVEY = 50;
+		}
 		else
+		{
 			Imgproc.putText(ranged, "X", new Point(x, y), 1, 1, new Scalar(0, 0, 255), 2);
+			MOVEX = 0;
+			MOVEY = 0;
+		}
 
-		MOVE =(x - (toModify.size().width)/2) * 0.5;
+		Connections.getInstance().addCommandToSendQueue(MotorHeader, (byte) MOVEX, (byte) MOVEY);
 
 		//Convert back to Bitmap and return
 		return matToBitmap(ranged);

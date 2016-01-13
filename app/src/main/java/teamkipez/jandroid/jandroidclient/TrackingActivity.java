@@ -140,15 +140,12 @@ public class TrackingActivity extends AppCompatActivity implements CvCameraViewL
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
-		getMenuInflater().inflate(R.menu.menu_tracking, menu);
 		return true;
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item)
 	{
-		if (item.getItemId() == R.id.seekBarsSettings)
-		;
 		return false;
 	}
 
@@ -202,7 +199,6 @@ public class TrackingActivity extends AppCompatActivity implements CvCameraViewL
 		if (mOpenCvCameraView != null)
 			mOpenCvCameraView.disableView();
 	}
-
 
 	@Override
 	public void onCameraViewStarted(int width, int height)
