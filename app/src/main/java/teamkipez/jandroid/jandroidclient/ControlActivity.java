@@ -348,6 +348,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	{
 		//Convert Bitmap to OpenCV Mat
 		toModify = bitmapToMat(frame);
+		Imgproc.resize(toModify, toModify, new Size(384, 216));
 
 		//Processing
 		Imgproc.cvtColor(toModify, toModify, Imgproc.COLOR_BGR2HSV);
@@ -400,14 +401,14 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		if (!objectFound)
 		{
 			Imgproc.putText(ranged, "TOO MUCH NOISE", new Point(0, 50), 1, 1, new Scalar(0, 0, 255), 2);
-			MOVEX = (x - (toModify.size().width)/2) * 0.5;
-			MOVEY = 50;
+			MOVEX = 0;
+			MOVEY = 0;
 		}
 		else
 		{
+			MOVEX = (x - (toModify.size().width)/2) * 0.4;
+			MOVEY = 50;
 			Imgproc.putText(ranged, "X", new Point(x, y), 1, 1, new Scalar(0, 0, 255), 2);
-			MOVEX = 0;
-			MOVEY = 0;
 		}
 
 		Connections.getInstance().addCommandToSendQueue(MotorHeader, (byte) MOVEX, (byte) MOVEY);
