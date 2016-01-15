@@ -45,8 +45,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	private static final String TAG = "ControlActivity";
 
 	private MjpegView videoView = null;
-	//private static final String URL = "http://192.168.12.1:8090/?action=stream";
-	private static final String URL = "http://192.168.1.19:8090/?action=stream";
+	private static final String URL = "http://192.168.12.1:8090/?action=stream";
 	//Testing stream
 	//private static String URL = "http://mjpeg.sanford.io/count.mjpeg";
 	public static final byte MotorHeader = 'M';
