@@ -47,7 +47,7 @@
 	<ImageButton
 		android:layout_height="40dip"
 		android:layout_width="40dip"
-		android:background="@drawable/tracking_white"
+		android:src="@drawable/tracking_black"
 		android:id="@+id/trackingButton"
 		/>
 
@@ -71,7 +71,7 @@
 	<ImageButton
 		android:layout_height="40dip"
 		android:layout_width="40dip"
-		android:background="@drawable/settings_black"
+		android:src="@drawable/settings_black"
 		android:id="@+id/trackingSettingsButton"
 		android:layout_alignParentTop="true"
 		android:layout_alignParentEnd="true"

@@ -34,30 +34,20 @@ import edu.cmu.pocketsphinx.SpeechRecognizerSetup;
 import java.io.IOException;
 import java.io.File;
 import java.lang.Math;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfInt4;
-import org.opencv.core.MatOfPoint;
-import org.opencv.core.Point;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
 
-public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener, NewFrameListener
+public class ControlActivity extends Activity implements SensorEventListener, RecognitionListener, NewFrameListener, ObjectTrackingListener
 {
 	private static final String SEARCH_TYPE = "pesance";
 	private static final String TAG = "ControlActivity";
 
 	private MjpegView videoView = null;
-	private static final String URL = "http://192.168.12.1:8090/?action=stream";
+	//private static final String URL = "http://192.168.12.1:8090/?action=stream";
+	private static final String URL = "http://192.168.1.19:8090/?action=stream";
+	//Testing stream
 	//private static String URL = "http://mjpeg.sanford.io/count.mjpeg";
 	public static final byte MotorHeader = 'M';
 	public static final byte CamHeader = 'C';
@@ -80,13 +70,8 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	private boolean trackingIsOn = false, visibleSeekBars = false;
 	private LinearLayout seekBarsLayout;
 	private ImageButton trackingButton, trackingSettingsButton;
+	private Tracking tracking;
 	private SparseArray<SeekBar> seekBarsMap;
-
-	private Mat erodeElement, dilateElement, toModify, ranged, tmp;
-	private Rect bounding;
-	private int width = 384, height = 216;
-	private double area = 0, refArea = 0, x, y, MOVEX, MOVEY;
-	private boolean objectFound = false;
 
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
 	{
@@ -98,11 +83,8 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 				case LoaderCallbackInterface.SUCCESS:
 					{
 						Log.i(TAG, "OpenCV loaded successfully");
-						erodeElement = new Mat();
-						dilateElement = new Mat();
-						toModify = new Mat();
-						ranged = new Mat();
-						tmp = new Mat();
+						tracking = new Tracking(seekBarsMap);
+						tracking.setObjectTrackingListener(ControlActivity.this);
 						break;
 					}
 				default:
@@ -135,6 +117,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 
 		//Tracking
 		videoView.setNewFrameListener(this);
+
 		trackingButton = (ImageButton) findViewById(R.id.trackingButton);
 		trackingButton.setOnClickListener(new View.OnClickListener()
 		{
@@ -202,8 +185,8 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		//Joysticks
 		rightJoystick = (Joystick) findViewById(R.id.joystickRight);
 		leftJoystick = (Joystick) findViewById(R.id.joystick);
-		leftJoystick.setJoystickListener(initJoystick(MotorHeader));
-		rightJoystick.setJoystickListener(initJoystick(CamHeader));
+		leftJoystick.setJoystickListener(setupJoystickListener(MotorHeader));
+		rightJoystick.setJoystickListener(setupJoystickListener(CamHeader));
 
 		//Sensor
 		sensorButton = (ImageButton) findViewById(R.id.button_sensor);
@@ -232,7 +215,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	{
 		super.onResume();
 
-		if (!OpenCVLoader.initDebug())
+		if(!OpenCVLoader.initDebug())
 		{
 			Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
 			OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
@@ -294,9 +277,9 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		{
 			if(visibleSeekBars)
 				toggleTrackingSettings();
+
 			sensorButton.setVisibility(View.VISIBLE);
 			speakButton.setVisibility(View.VISIBLE);
-			trackingButton.setBackgroundResource(R.drawable.tracking_white);
 			trackingSettingsButton.setVisibility(View.INVISIBLE);
 			trackingIsOn = false;
 		}
@@ -304,11 +287,32 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		{
 			sensorButton.setVisibility(View.INVISIBLE);
 			speakButton.setVisibility(View.INVISIBLE);
-			trackingButton.setBackgroundResource(R.drawable.tracking_black);
 			trackingSettingsButton.setVisibility(View.VISIBLE);
 			trackingIsOn = true;
 		}
 	}
+
+	@Override
+	public Bitmap onFrame(Bitmap frame)
+	{
+		return trackingIsOn? tracking.processFrame(frame): frame;
+	}
+
+	@Override
+	public void onNewObjectPosition(double x, double y)
+	{
+		Connections.getInstance().addCommandToSendQueue(MotorHeader, (byte) x, (byte) y);
+		for(int i = 0; i < 10; ++i)
+		Log.d("POSITION", "IL A CHANGE DE POSITION SA MERE !");
+	}
+
+	@Override
+	public void onObjectDisappeared()
+	{
+		Connections.getInstance().addCommandToSendQueue(MotorHeader, (byte) 0, (byte) 0);
+	}
+
+	//Tracking SeekBars settings
 
 	private void setupSeekBars()
 	{
@@ -329,102 +333,8 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 		}
 	}
 
-	private Mat bitmapToMat(Bitmap input)
-	{
-		input = input.copy(Bitmap.Config.ARGB_8888, true);
-		Mat output = new Mat();
-		Utils.bitmapToMat(input, output);
-		return output;
-	}
-
-	private Bitmap matToBitmap(Mat input)
-	{
-		Bitmap output = Bitmap.createBitmap(input.cols(), input.rows(), Bitmap.Config.ARGB_8888);;
-		Utils.matToBitmap(input, output);
-		return output;
-	}
-
-	private Bitmap processFrame(Bitmap frame)
-	{
-		//Convert Bitmap to OpenCV Mat
-		toModify = bitmapToMat(frame);
-		Imgproc.resize(toModify, toModify, new Size(384, 216));
-
-		//Processing
-		Imgproc.cvtColor(toModify, toModify, Imgproc.COLOR_BGR2HSV);
-
-		Core.inRange(toModify,
-				new Scalar(seekBarsMap.get(R.id.seekBarHmin).getProgress(),
-					seekBarsMap.get(R.id.seekBarSmin).getProgress(),
-					seekBarsMap.get(R.id.seekBarVmin).getProgress()),
-				new Scalar(seekBarsMap.get(R.id.seekBarHmax).getProgress(),
-					seekBarsMap.get(R.id.seekBarSmax).getProgress(),
-					seekBarsMap.get(R.id.seekBarVmax).getProgress())
-				, ranged);
-
-		erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-		dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(8, 8));
-
-		Imgproc.erode(ranged, ranged, erodeElement);
-		Imgproc.erode(ranged, ranged, erodeElement);
-
-		Imgproc.dilate(ranged, ranged, dilateElement);
-		Imgproc.dilate(ranged, ranged, dilateElement);
-
-		ranged.copyTo(tmp);
-
-		List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-		MatOfInt4 hierarchy = new MatOfInt4();
-		Imgproc.findContours(tmp, contours, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_NONE);
-
-		double width = hierarchy.size().width;
-		refArea = 0;
-		area = 0;
-
-		if (width > 0 && width < 15)
-		{
-			for (int index = 0; index < contours.size(); index++)
-			{
-				bounding = Imgproc.boundingRect(contours.get(index));
-				area = bounding.area();
-				if (area > refArea && area > 100) {
-
-					x = bounding.x + (bounding.width /2);
-					y = bounding.y + (bounding.height /2);
-					objectFound = true;
-					refArea = area;
-				} else
-					objectFound = false;
-			}
-		}
-
-		if (!objectFound)
-		{
-			Imgproc.putText(ranged, "TOO MUCH NOISE", new Point(0, 50), 1, 1, new Scalar(0, 0, 255), 2);
-			MOVEX = 0;
-			MOVEY = 0;
-		}
-		else
-		{
-			MOVEX = (x - (toModify.size().width)/2) * 0.4;
-			MOVEY = 50;
-			Imgproc.putText(ranged, "X", new Point(x, y), 1, 1, new Scalar(0, 0, 255), 2);
-		}
-
-		Connections.getInstance().addCommandToSendQueue(MotorHeader, (byte) MOVEX, (byte) MOVEY);
-
-		//Convert back to Bitmap and return
-		return matToBitmap(ranged);
-	}
-
-	@Override
-	public Bitmap onFrame(Bitmap frame)
-	{
-		return trackingIsOn? processFrame(frame): frame;
-	}
-
 	//Joysticks
-	private JoystickListener initJoystick(final byte which)
+	private JoystickListener setupJoystickListener(final byte which)
 	{
 		return new JoystickListener()
 		{
@@ -572,7 +482,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 			sensor = false;
 			sensorManager.unregisterListener(this);
 			sensorButton.setBackgroundResource(R.drawable.sensor_inactive);
-			leftJoystick.setJoystickListener(initJoystick(MotorHeader));
+			leftJoystick.setJoystickListener(setupJoystickListener(MotorHeader));
 		}
 	}
 
@@ -580,7 +490,7 @@ public class ControlActivity extends Activity implements SensorEventListener, Re
 	{
 		byte output = (byte) (input * 10.0f);
 
-		//Reduce sensitivity
+		//Reduce sensitivity for shot movements
 		if(Math.abs(output) <= 30)
 			output = 0;
 
